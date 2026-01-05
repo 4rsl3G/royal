@@ -2,17 +2,21 @@
    Royal Dreams Admin CSS (FULL CUSTOM) — Clean + Pro + Fancy (MAX)
    - Responsive navbar + drawer
    - Scroll-safe (table/cards) + sticky header
-   - Modal fixed (NOT dragged by list)
+   - Orders: scroll ONLY inside card list
+   - Modal fixed (NOT dragged by list) + smooth open/close animation
    - iOS smooth scrolling + safe-area
    - Skeleton + shimmer + floaty + subtle infinite animations
    ========================================================= */
 
+/* =========================
+   Root
+   ========================= */
 :root{
-  --bg: #f8fafc;            /* slate-50 */
+  --bg: #f8fafc;                 /* slate-50 */
   --card: rgba(255,255,255,.85);
   --card2: rgba(255,255,255,.75);
-  --text: #0f172a;          /* slate-900 */
-  --muted: #64748b;         /* slate-500 */
+  --text: #0f172a;               /* slate-900 */
+  --muted: #64748b;              /* slate-500 */
   --line: rgba(148,163,184,.35); /* slate-400 alpha */
   --line2: rgba(148,163,184,.22);
   --shadow: 0 12px 35px rgba(15,23,42,.08);
@@ -24,16 +28,20 @@
   --warn: #f59e0b;
   --bad: #e11d48;
   --info: #2563eb;
+
   --radius: 22px;
   --radius2: 16px;
   --radius3: 14px;
+
   --ring: 0 0 0 4px rgba(15,23,42,.08);
 
-  /* scroll vars */
-  --scrollH: min(62vh, 560px);
+  /* Orders scroll target height (fallback). Actual orders uses flex fill. */
+  --scrollH: 62vh;
 }
 
-/* Base */
+/* =========================
+   Base
+   ========================= */
 *{ box-sizing: border-box; }
 html,body{ height:100%; }
 body{
@@ -50,7 +58,6 @@ a{ color: inherit; text-decoration: none; }
 img{ max-width: 100%; height:auto; display:block; }
 button, input, select, textarea{ font: inherit; }
 table{ border-collapse: collapse; }
-select{ background-image: none; }
 
 /* Subtle animated background (admin) */
 body::before{
@@ -72,7 +79,9 @@ body::before{
   100%{ transform: translate3d(40px,14px,0) scale(1.06); opacity: 1; }
 }
 
-/* Utilities */
+/* =========================
+   Utilities
+   ========================= */
 .hidden{ display:none !important; }
 .muted{ color: var(--muted); }
 .hr{ height:1px; background: var(--line2); width:100%; }
@@ -86,8 +95,6 @@ body::before{
   font-size: 12px;
   color: var(--text);
 }
-
-/* Prevent flex overflow issues */
 .min-w-0{ min-width:0 !important; }
 .truncate{
   white-space: nowrap;
@@ -99,11 +106,56 @@ body::before{
   word-break: break-word;
 }
 
-/* =========================================================
-   Scroll helpers (IMPORTANT for Orders)
-   ========================================================= */
+/* nicer scrollbars (desktop) */
+@media (hover:hover){
+  *::-webkit-scrollbar{ width: 10px; height: 10px; }
+  *::-webkit-scrollbar-thumb{
+    background: rgba(15,23,42,.18);
+    border-radius: 999px;
+    border: 2px solid rgba(255,255,255,.55);
+  }
+  *::-webkit-scrollbar-track{ background: rgba(15,23,42,.04); }
+}
 
-/* Generic scroll container */
+/* =========================
+   ADMIN SHELL: lock page scroll
+   (scroll akan ditangani oleh container internal)
+   ========================= */
+
+/* Body jangan ikut scroll (prevent page dragging) */
+html, body{
+  overflow: hidden;
+}
+
+/* main area jadi viewport container yang fix */
+#admin-main{
+  height: calc(100vh - 84px); /* header sticky kira-kira 84px */
+  overflow: hidden;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+@media (max-width: 640px){
+  #admin-main{ height: calc(100vh - 76px); }
+}
+
+/* Default: konten admin boleh scroll (untuk page selain Orders)
+   Kalau kamu ingin page lain FULL static, bungkus dengan .page-scroll */
+#admin-content{
+  height: 100%;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Opsional wrapper untuk page yang butuh scroll internal sendiri */
+.page-scroll{
+  height: 100%;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* =========================
+   Scroll helpers
+   ========================= */
 .rd-scroll{
   max-height: var(--scrollH);
   overflow: auto;
@@ -111,46 +163,11 @@ body::before{
   -webkit-overflow-scrolling: touch;
   padding-right: 6px;
 }
-
-/* Orders: scroll area inside card */
-.orders-scroll{
-  padding: 12px;
-  max-height: var(--scrollH);
-  overflow: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
+@media (max-width: 900px){
+  :root{ --scrollH: 64vh; }
 }
 
-/* keep card header fixed (inside card) */
-.card-head{
-  border-bottom: 1px solid var(--line2);
-}
-
-/* optional: body wrapper for scroll layout */
-.card-body{
-  padding: 0;
-}
-
-/* nice scrollbar (webkit) */
-.orders-scroll::-webkit-scrollbar,
-.rd-scroll::-webkit-scrollbar{
-  width: 10px;
-  height: 10px;
-}
-.orders-scroll::-webkit-scrollbar-thumb,
-.rd-scroll::-webkit-scrollbar-thumb{
-  background: rgba(148,163,184,.35);
-  border-radius: 999px;
-  border: 2px solid rgba(255,255,255,.55);
-}
-.orders-scroll::-webkit-scrollbar-track,
-.rd-scroll::-webkit-scrollbar-track{
-  background: rgba(255,255,255,.35);
-  border-radius: 999px;
-}
-
-/* sticky header for table inside scroll area */
-.orders-scroll .table thead th,
+/* sticky table header for custom table (orders etc.) */
 .rd-table thead th{
   position: sticky;
   top: 0;
@@ -160,17 +177,9 @@ body::before{
   border-bottom: 1px solid var(--line2);
 }
 
-/* Responsive scroll height tuning */
-@media (max-width: 900px){
-  :root{ --scrollH: min(66vh, 620px); }
-}
-@media (max-width: 420px){
-  :root{ --scrollH: min(70vh, 660px); }
-}
-
-/* =========================================================
+/* =========================
    Buttons
-   ========================================================= */
+   ========================= */
 .btn{
   display:inline-flex;
   align-items:center;
@@ -241,9 +250,9 @@ body::before{
   100%{ transform: translateX(120%); }
 }
 
-/* =========================================================
-   Admin Shell Nav (matches updated admin_shell.ejs)
-   ========================================================= */
+/* =========================
+   Admin Shell Nav (matches admin_shell.ejs)
+   ========================= */
 .navbtn{
   display:inline-flex;
   align-items:center;
@@ -307,9 +316,9 @@ body::before{
 }
 .is-active i{ color:#fff !important; opacity:1 !important; }
 
-/* =========================================================
+/* =========================
    Cards / Panels
-   ========================================================= */
+   ========================= */
 .card{
   background: var(--card);
   border: 1px solid var(--line);
@@ -375,9 +384,9 @@ body::before{
 .badge.bad{ border-color: rgba(225,29,72,.25); background: rgba(225,29,72,.12); color: var(--bad); }
 .badge.info{ border-color: rgba(37,99,235,.25); background: rgba(37,99,235,.12); color: var(--info); }
 
-/* =========================================================
+/* =========================
    Forms
-   ========================================================= */
+   ========================= */
 .form-grid{
   display:grid;
   grid-template-columns: repeat(12, 1fr);
@@ -435,9 +444,9 @@ body::before{
 }
 .toggle input{ width:18px; height:18px; }
 
-/* =========================================================
+/* =========================
    Table (generic)
-   ========================================================= */
+   ========================= */
 .table-wrap{
   overflow: auto;
   border-radius: var(--radius);
@@ -468,33 +477,98 @@ body::before{
   color: rgba(15,23,42,.65);
   font-weight: 900;
 }
-.table tr:hover td{
-  background: rgba(248,250,252,.85);
-}
+.table tr:hover td{ background: rgba(248,250,252,.85); }
 .td-strong{ font-weight: 900; }
 .td-muted{ color: var(--muted); }
 .td-actions{ white-space: nowrap; text-align: right; }
 
-/* =========================================================
-   Modal (GLOBAL + FIXED positioning)
-   ========================================================= */
+/* =========================
+   ORDERS PAGE: scroll cuma di card list
+   - otomatis aktif kalau #admin-content memiliki #tableWrap (orders)
+   ========================= */
 
-/* If you use: <div id="modal" class="..."> from your EJS */
+/* Modern browsers: saat halaman Orders terdeteksi */
+#admin-content:has(#tableWrap),
+#admin-content:has(#cardsWrap){
+  overflow: hidden;                 /* IMPORTANT: tidak scroll di container page */
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Pastikan card list bisa "mengambil sisa tinggi" */
+#admin-content:has(#tableWrap) #tableWrap,
+#admin-content:has(#cardsWrap) #cardsWrap{
+  flex: 1;
+  min-height: 0;                    /* IMPORTANT for flex scroll */
+}
+
+/* Card list wrap menjadi flex-column supaya area list scroll bisa flex:1 */
+#tableWrap,
+#cardsWrap .card{
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Ini container scroll yang kamu pakai di orders.ejs: .orders-scroll */
+.orders-scroll{
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 6px;
+  max-height: none;                 /* jangan dibatasi vh, biar flex yang ngatur */
+}
+
+/* Sedikit spacing agar list enak dibaca */
+.orders-scroll table{ width: 100%; }
+.orders-scroll thead th{
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: rgba(255,255,255,.92);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line2);
+}
+
+/* =========================
+   Modal (GLOBAL + FIXED positioning) + smooth open/close
+   ========================= */
+
+/* Modal container */
 #modal{
   position: fixed;
   inset: 0;
   z-index: 70;
+  background: rgba(0,0,0,.30);
+  backdrop-filter: blur(8px);
+
+  /* Animation */
+  opacity: 1;
+  transition: opacity .18s ease;
 }
 
-/* MODAL wrap: starts from top, can scroll itself */
+/* Override .hidden khusus modal:
+   jangan display:none supaya close animation bisa jalan */
+#modal.hidden{
+  display: block !important;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .18s ease, visibility 0s linear .18s;
+}
+
+/* wrap: modal content bisa scroll */
 .rd-modal-wrap{
   position: absolute;
   inset: 0;
   display:flex;
-  align-items:flex-start;   /* IMPORTANT: not center */
+  align-items:flex-start;            /* IMPORTANT: not center */
   justify-content:center;
   padding: 18px;
-  overflow: auto;
+  overflow: auto;                    /* scroll modal */
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   padding-bottom: calc(18px + env(safe-area-inset-bottom));
@@ -509,20 +583,30 @@ body::before{
   background: rgba(255,255,255,.92);
   box-shadow: 0 24px 90px rgba(0,0,0,.25);
   overflow:hidden;
-  animation: popIn .18s ease-out;
+
+  transform: translateY(0) scale(1);
+  transition: transform .18s ease, opacity .18s ease;
+  animation: popIn .18s ease-out both;
 }
+
+/* close state animation (ketika #modal.hidden aktif) */
+#modal.hidden .rd-modal-card{
+  transform: translateY(10px) scale(.985);
+}
+
 @keyframes popIn{
   from{ transform: translateY(10px) scale(.985); opacity: 0; }
   to{ transform: translateY(0) scale(1); opacity: 1; }
 }
+
 @media (max-width: 480px){
   .rd-modal-card{ margin-top: 4vh; }
 }
 
-/* Optional: when modal open lock page scroll */
+/* optional: kalau kamu tetap pakai body.modal-open */
 body.modal-open{ overflow: hidden; }
 
-/* Legacy modal class (keep compatibility if still used somewhere) */
+/* Legacy modal class (compat) */
 .modal-backdrop{
   position: fixed;
   inset: 0;
@@ -551,10 +635,7 @@ body.modal-open{ overflow: hidden; }
   gap: 10px;
   border-bottom: 1px solid var(--line2);
 }
-.modal-title{
-  font-weight: 900;
-  letter-spacing: -.02em;
-}
+.modal-title{ font-weight: 900; letter-spacing: -.02em; }
 .modal-body{ padding: 18px; }
 .modal-foot{
   padding: 16px 18px;
@@ -566,9 +647,9 @@ body.modal-open{ overflow: hidden; }
   flex-wrap: wrap;
 }
 
-/* =========================================================
+/* =========================
    Skeleton Loading
-   ========================================================= */
+   ========================= */
 .skeleton{
   border-radius: 16px;
   background: linear-gradient(90deg,
@@ -584,12 +665,10 @@ body.modal-open{ overflow: hidden; }
   100%{ background-position: 100% 0; }
 }
 
-/* =========================================================
-   “AOS-like” Effects (Infinite optional)
-   ========================================================= */
-.fade-up{
-  animation: fadeUp .45s ease-out both;
-}
+/* =========================
+   “AOS-like” Effects
+   ========================= */
+.fade-up{ animation: fadeUp .45s ease-out both; }
 @keyframes fadeUp{
   from{ opacity: 0; transform: translateY(10px); }
   to{ opacity: 1; transform: translateY(0); }
@@ -632,9 +711,9 @@ body.modal-open{ overflow: hidden; }
   100%{ transform: translateX(180%) rotate(18deg); opacity: 0; }
 }
 
-/* =========================================================
+/* =========================
    WhatsApp block helpers
-   ========================================================= */
+   ========================= */
 .wa-box{
   display:grid;
   grid-template-columns: 1.2fr .8fr;
@@ -665,9 +744,9 @@ body.modal-open{ overflow: hidden; }
   box-shadow: 0 18px 55px rgba(15,23,42,.30);
 }
 
-/* =========================================================
+/* =========================
    Toast tweaks (Toastr)
-   ========================================================= */
+   ========================= */
 #toast-container > .toast{
   border-radius: 16px !important;
   box-shadow: 0 20px 70px rgba(0,0,0,.15) !important;
@@ -677,9 +756,9 @@ body.modal-open{ overflow: hidden; }
   left: 14px !important;
 }
 
-/* =========================================================
+/* =========================
    Small responsive fixes
-   ========================================================= */
+   ========================= */
 @media (max-width: 420px){
   .btn{ width:100%; }
   .btn-sm{ width:auto; }
