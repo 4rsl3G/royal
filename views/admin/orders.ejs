@@ -1,4 +1,6 @@
-<div class="fade-up">
+<div class="orders-page fade-up">
+
+  <!-- FILTER CARD (tetap) -->
   <div class="card card-pad scanline">
     <div class="card-row">
       <div class="min-w-0">
@@ -56,21 +58,16 @@
       </div>
     </div>
   </div>
-</div>
 
-<!-- LIST WRAP (pagination lives here) -->
-<div class="mt-4 card card-pad fade-up">
-  <div class="card-row">
-    <div class="font-extrabold text-lg">Orders</div>
-    <div class="flex items-center gap-2 flex-wrap">
-      <div class="pill"><i class="ri-database-2-line"></i> <span id="countBox">0</span> total</div>
-      <div class="pill"><i class="ri-pages-line"></i> page <span id="pageNow">1</span>/<span id="pageTotal">1</span></div>
+  <!-- LIST CARD (yang scroll cuma ini) -->
+  <div class="card card-pad orders-list-card" id="tableWrap">
+    <div class="card-row">
+      <div class="font-extrabold text-lg">Orders</div>
+      <div class="pill"><i class="ri-database-2-line"></i> <span id="countBox">0</span> rows</div>
     </div>
-  </div>
 
-  <!-- DESKTOP TABLE -->
-  <div class="mt-4" id="tableWrap">
-    <div style="overflow:auto;">
+    <!-- SCROLL AREA -->
+    <div class="orders-list-scroll mt-4">
       <table class="w-full text-sm">
         <thead>
           <tr class="text-left text-slate-500">
@@ -88,69 +85,69 @@
     </div>
   </div>
 
-  <!-- MOBILE CARDS -->
-  <div class="mt-4" id="cardsWrap" style="display:none;">
-    <div id="cardsBox"></div>
-  </div>
-
-  <!-- PAGINATION -->
-  <div class="mt-4 flex items-center justify-between gap-2 flex-wrap">
-    <div class="text-xs text-slate-500">
-      Menampilkan <b id="rangeText">0-0</b> dari <b id="totalText">0</b> data • per halaman <b>5</b>
+  <!-- MOBILE CARDS (juga scroll hanya di card ini) -->
+  <div class="card card-pad orders-list-card" id="cardsWrap" style="display:none;">
+    <div class="card-row">
+      <div class="font-extrabold text-lg">Orders</div>
+      <div class="pill"><i class="ri-database-2-line"></i> <span id="countBox2">0</span> items</div>
     </div>
 
-    <div class="flex items-center gap-2 flex-wrap">
-      <button class="btn btn-ghost btn-sm" id="btnPrev"><i class="ri-arrow-left-line"></i> Prev</button>
-      <div id="pageBtns" class="flex items-center gap-2 flex-wrap"></div>
-      <button class="btn btn-ghost btn-sm" id="btnNext">Next <i class="ri-arrow-right-line"></i></button>
-    </div>
+    <div class="orders-list-scroll mt-4" id="cardsBox"></div>
   </div>
+
 </div>
 
 <!-- MODAL -->
-<div id="modal" class="hidden fixed inset-0 z-50 bg-black/30 backdrop-blur-sm">
+<div id="modal" class="hidden">
   <div class="rd-modal-wrap">
-    <div class="rd-modal-card card card-pad" style="width:100%;max-width:680px;">
-      <div class="card-row">
-        <div>
-          <div class="font-extrabold text-lg">Update Fulfill</div>
-          <div class="text-sm text-slate-500">Update status + admin note (dipakai template WA).</div>
-        </div>
-        <button class="btn btn-ghost" id="closeModal"><i class="ri-close-line"></i></button>
-      </div>
-
-      <div class="mt-4 grid md:grid-cols-2 gap-3">
-        <div class="card soft card-pad" style="border-radius:18px;border:1px solid var(--line2);">
-          <div class="text-xs text-slate-500">Order ID</div>
-          <div class="font-extrabold mt-1" id="mOrderId">-</div>
-          <div class="text-xs text-slate-500 mt-2">Pay</div>
-          <div class="mt-1" id="mPayBadge">-</div>
-          <div class="text-xs text-slate-500 mt-2">Gross</div>
-          <div class="font-extrabold mt-1" id="mGross">-</div>
+    <div class="rd-modal-card">
+      <div class="card card-pad" style="border:none;box-shadow:none;background:transparent;">
+        <div class="card-row">
+          <div>
+            <div class="font-extrabold text-lg">Update Fulfill</div>
+            <div class="text-sm text-slate-500">Update status + admin note (dipakai template WA).</div>
+          </div>
+          <button class="btn btn-ghost" id="closeModal"><i class="ri-close-line"></i></button>
         </div>
 
-        <div class="card soft card-pad" style="border-radius:18px;border:1px solid var(--line2);">
-          <div class="label">Fulfill Status</div>
-          <select id="mFulfill" class="select">
-            <option value="waiting">waiting</option>
-            <option value="processing">processing</option>
-            <option value="done">done</option>
-            <option value="rejected">rejected</option>
-          </select>
+        <!-- scrollable body -->
+        <div class="rd-modal-body">
+          <div class="grid md:grid-cols-2 gap-3">
+            <div class="card soft card-pad" style="border-radius:18px;border:1px solid var(--line2);">
+              <div class="text-xs text-slate-500">Order ID</div>
+              <div class="font-extrabold mt-1 break-anywhere" id="mOrderId">-</div>
 
-          <div class="label mt-3">Admin Note</div>
-          <textarea id="mNote" class="textarea" rows="4" placeholder="Catatan untuk customer (dipakai di template WA)"></textarea>
+              <div class="text-xs text-slate-500 mt-3">Pay</div>
+              <div class="mt-1" id="mPayBadge">-</div>
 
-          <div class="mt-3">
-            <button class="btn btn-primary shimmer btn-block" id="saveBtn">
-              <i class="ri-save-3-line"></i> Simpan
-            </button>
+              <div class="text-xs text-slate-500 mt-3">Gross</div>
+              <div class="font-extrabold mt-1" id="mGross">-</div>
+            </div>
+
+            <div class="card soft card-pad" style="border-radius:18px;border:1px solid var(--line2);">
+              <div class="label">Fulfill Status</div>
+              <select id="mFulfill" class="select">
+                <option value="waiting">waiting</option>
+                <option value="processing">processing</option>
+                <option value="done">done</option>
+                <option value="rejected">rejected</option>
+              </select>
+
+              <div class="label mt-3">Admin Note</div>
+              <textarea id="mNote" class="textarea" rows="7" placeholder="Catatan untuk customer (dipakai di template WA)"></textarea>
+
+              <div class="mt-3">
+                <button class="btn btn-primary shimmer btn-block" id="saveBtn">
+                  <i class="ri-save-3-line"></i> Simpan
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-3 help">
+            Saran: set “processing” saat mulai pengerjaan. “done”/“rejected” akan memicu template WA (jika enabled + connected).
           </div>
         </div>
-      </div>
-
-      <div class="mt-3 help">
-        Saran: set “processing” saat mulai pengerjaan. “done”/“rejected” akan memicu template WA (jika enabled + connected).
       </div>
     </div>
   </div>
@@ -185,17 +182,15 @@
     return `<span class="badge">${escapeHtml(st||'-')}</span>`;
   }
 
-  const PAGE_SIZE = 5;
   let CURRENT = null;
   let DATA = [];
-  let PAGE = 1;
 
   function rowHtml(o){
     const note = escapeHtml(o.admin_note || '');
     return `
       <tr class="border-t">
         <td class="py-2 pr-3">
-          <div class="font-extrabold">${escapeHtml(o.order_id)}</div>
+          <div class="font-extrabold break-anywhere">${escapeHtml(o.order_id)}</div>
           <div class="text-xs text-slate-500">${escapeHtml(String(o.created_at).replace('T',' ').slice(0,19))}</div>
         </td>
         <td class="py-2 pr-3">
@@ -231,7 +226,7 @@
       <div class="card soft" style="border-radius:22px;border:1px solid var(--line2);padding:12px;margin-bottom:12px;">
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
-            <div class="font-extrabold truncate">${escapeHtml(o.order_id)}</div>
+            <div class="font-extrabold break-anywhere">${escapeHtml(o.order_id)}</div>
             <div class="text-xs text-slate-500 mt-1">${escapeHtml(String(o.created_at).replace('T',' ').slice(0,19))}</div>
           </div>
           <button class="btn btn-sm js-edit"
@@ -265,6 +260,7 @@
     `;
   }
 
+  /* ===== Modal WAH open/close ===== */
   function openModalFromData(data){
     CURRENT = data.oid;
     $('#mOrderId').text(CURRENT);
@@ -272,86 +268,54 @@
     $('#mNote').val(data.note || '');
     $('#mPayBadge').html(payBadge(data.pay || '-'));
     $('#mGross').text(rupiah(data.gross || 0));
+
+    const $m = $('#modal');
+
     $('body').addClass('modal-open');
-    $('#modal').removeClass('hidden');
+    $m.removeClass('hidden is-closing').addClass('is-open');
+
+    // reset scroll inside modal
+    $m.find('.rd-modal-wrap').scrollTop(0);
+    $m.find('.rd-modal-body').scrollTop(0);
   }
 
   function closeModal(){
-    $('#modal').addClass('hidden');
-    $('body').removeClass('modal-open');
-    CURRENT = null;
+    const $m = $('#modal');
+    if ($m.hasClass('hidden')) return;
+
+    $m.removeClass('is-open').addClass('is-closing');
+
+    setTimeout(() => {
+      $m.addClass('hidden').removeClass('is-closing');
+      $('body').removeClass('modal-open');
+      CURRENT = null;
+    }, 220);
   }
 
-  function totalPages(){
-    return Math.max(1, Math.ceil((DATA || []).length / PAGE_SIZE));
-  }
-
-  function sliceForPage(p){
-    const start = (p - 1) * PAGE_SIZE;
-    return (DATA || []).slice(start, start + PAGE_SIZE);
-  }
-
-  function renderPagination(){
-    const tp = totalPages();
-    PAGE = Math.min(Math.max(1, PAGE), tp);
-
-    $('#pageNow').text(PAGE);
-    $('#pageTotal').text(tp);
-    $('#totalText').text(DATA.length);
-
-    const start = DATA.length ? ((PAGE-1)*PAGE_SIZE + 1) : 0;
-    const end = Math.min(PAGE*PAGE_SIZE, DATA.length);
-    $('#rangeText').text(`${start}-${end}`);
-    $('#countBox').text(DATA.length);
-
-    $('#btnPrev').prop('disabled', PAGE <= 1).toggleClass('opacity-60', PAGE<=1);
-    $('#btnNext').prop('disabled', PAGE >= tp).toggleClass('opacity-60', PAGE>=tp);
-
-    // Page number buttons (max 5)
-    const maxBtns = 5;
-    let from = Math.max(1, PAGE - 2);
-    let to = Math.min(tp, from + (maxBtns - 1));
-    from = Math.max(1, to - (maxBtns - 1));
-
-    let html = '';
-    for(let i = from; i <= to; i++){
-      const active = i === PAGE;
-      html += `
-        <button class="btn btn-sm ${active ? 'btn-primary' : 'btn-ghost'} js-page" data-page="${i}">
-          ${i}
-        </button>
-      `;
-    }
-    $('#pageBtns').html(html);
-  }
-
-  function renderResponsivePage(){
+  function renderResponsive(data){
     const isMobile = window.matchMedia && window.matchMedia('(max-width: 880px)').matches;
-    const pageData = sliceForPage(PAGE);
-
     if(isMobile){
       $('#tableWrap').hide();
       $('#cardsWrap').show();
-      $('#cardsBox').html(pageData.map(cardHtml).join('') || `<div class="text-slate-500 text-sm">No data</div>`);
+      $('#countBox2').text(data.length);
+      $('#cardsBox').html(data.map(cardHtml).join('') || `<div class="text-slate-500 text-sm">No data</div>`);
     } else {
       $('#cardsWrap').hide();
       $('#tableWrap').show();
-      $('#tbody').html(pageData.map(rowHtml).join('') || `<tr><td class="py-3 text-slate-500" colspan="7">No data</td></tr>`);
+      $('#countBox').text(data.length);
+      $('#tbody').html(data.map(rowHtml).join('') || `<tr><td class="py-3 text-slate-500" colspan="7">No data</td></tr>`);
     }
-
-    renderPagination();
   }
 
-  async function load(resetPage=true){
+  async function load(){
     const qs = $.param({
       q: $('#q').val(),
       pay_status: $('#pay_status').val(),
       fulfill_status: $('#fulfill_status').val()
     });
 
-    // skeleton
-    $('#cardsBox').html(RD.ui.skeletonBlocks ? RD.ui.skeletonBlocks(5) : '');
-    if (RD.ui.skeletonTableRows) RD.ui.skeletonTableRows('#tbody', 7, 5);
+    $('#cardsBox').html(RD.ui.skeletonBlocks ? RD.ui.skeletonBlocks(6) : '');
+    if (RD.ui.skeletonTableRows) RD.ui.skeletonTableRows('#tbody', 7, 7);
 
     try {
       const resp = await $.ajax({
@@ -362,52 +326,32 @@
       if (!resp.ok) throw new Error('Failed');
 
       DATA = resp.data || [];
-      if (resetPage) PAGE = 1;
-      renderResponsivePage();
+      renderResponsive(DATA);
 
     } catch(e) {
       toastr.error(e.message || 'Failed load orders');
       $('#tbody').html(`<tr><td class="py-3 text-rose-600" colspan="7">Error</td></tr>`);
       $('#cardsBox').html(`<div class="text-rose-600 text-sm">Error</div>`);
-      DATA = [];
-      PAGE = 1;
-      renderPagination();
     }
   }
 
-  // events
-  $('#btnRefresh').on('click', () => load(true));
+  $('#btnRefresh').on('click', load);
 
   $('#btnQuickPending').on('click', function(){
     $('#pay_status').val('pending');
     $('#fulfill_status').val('');
-    load(true);
+    load();
   });
 
   $('#btnQuickWaiting').on('click', function(){
     $('#fulfill_status').val('waiting');
     $('#pay_status').val('');
-    load(true);
+    load();
   });
 
-  $('#q').on('keyup', RD.util.debounce(() => load(true), 400));
-  $('#pay_status, #fulfill_status').on('change', () => load(true));
+  $('#q').on('keyup', RD.util.debounce(load, 400));
+  $('#pay_status, #fulfill_status').on('change', load);
 
-  // pagination controls
-  $(document).on('click', '#btnPrev', function(){
-    PAGE = Math.max(1, PAGE - 1);
-    renderResponsivePage();
-  });
-  $(document).on('click', '#btnNext', function(){
-    PAGE = Math.min(totalPages(), PAGE + 1);
-    renderResponsivePage();
-  });
-  $(document).on('click', '.js-page', function(){
-    PAGE = Number($(this).data('page') || 1);
-    renderResponsivePage();
-  });
-
-  // delegated edit (works for table + cards)
   $(document).off('click', '.js-edit').on('click', '.js-edit', function(){
     const data = {
       oid: String($(this).data('oid') || ''),
@@ -420,9 +364,12 @@
   });
 
   $('#closeModal').on('click', closeModal);
-  $('#modal').on('click', (e) => { if (e.target.id==='modal') closeModal(); });
 
-  // ESC close
+  // klik backdrop (bukan card) => close
+  $('#modal').on('click', (e) => {
+    if ($(e.target).closest('.rd-modal-card').length === 0) closeModal();
+  });
+
   $(document).on('keydown', function(e){
     if (e.key === 'Escape' && !$('#modal').hasClass('hidden')) closeModal();
   });
@@ -443,7 +390,7 @@
       if (!resp.ok) throw new Error(resp.message || 'Failed');
       toastr.success('Saved');
       closeModal();
-      load(false); // keep page if possible
+      load();
     } catch(e) {
       toastr.error(e.responseJSON?.message || e.message || 'Failed');
     } finally {
@@ -451,12 +398,11 @@
     }
   });
 
-  // rerender on resize (for responsive switch)
   const onResize = RD.util.debounce(function(){
-    renderResponsivePage();
+    renderResponsive(DATA || []);
   }, 120);
   window.addEventListener('resize', onResize);
   RD.router.onLeave(() => window.removeEventListener('resize', onResize));
 
-  load(true);
+  load();
 </script>
