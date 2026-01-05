@@ -1,7 +1,9 @@
-// public/admin.js (UPDATED - auto-load /public/order.js only on Orders page)
 window.RD = window.RD || {};
 
 (function () {
+  // =========================
+  // UI helpers
+  // =========================
   RD.ui = {
     overlay(on) { $('#overlay').toggleClass('hidden', !on); },
 
@@ -53,6 +55,9 @@ window.RD = window.RD || {};
     }
   };
 
+  // =========================
+  // Utils
+  // =========================
   RD.util = {
     debounce(fn, wait) {
       let t;
@@ -62,14 +67,24 @@ window.RD = window.RD || {};
       };
     },
 
-    loadScriptOnce(src) {
+    // Load script once with a stable id (prevents double-load across routes)
+    loadScriptOnce(src, id) {
       RD.__loadedScripts = RD.__loadedScripts || {};
+
+      // If already loaded (by id), resolve
+      if (id && document.getElementById(id)) {
+        RD.__loadedScripts[src] = RD.__loadedScripts[src] || Promise.resolve(true);
+        return RD.__loadedScripts[src];
+      }
+
+      // If already in-flight, reuse
       if (RD.__loadedScripts[src]) return RD.__loadedScripts[src];
 
       RD.__loadedScripts[src] = new Promise((resolve, reject) => {
         const s = document.createElement('script');
         s.src = src;
         s.async = true;
+        if (id) s.id = id;
         s.onload = () => resolve(true);
         s.onerror = () => reject(new Error('Failed load script: ' + src));
         document.head.appendChild(s);
@@ -79,8 +94,14 @@ window.RD = window.RD || {};
     }
   };
 
+  // =========================
+  // Page registry
+  // =========================
   RD.pages = RD.pages || {};
 
+  // =========================
+  // Router (Admin SPA)
+  // =========================
   RD.router = (() => {
     let leaveHandlers = [];
 
@@ -93,25 +114,40 @@ window.RD = window.RD || {};
 
     async function mountPage($content) {
       const pageEl = $content.find('[data-admin-page]').first();
-      const page = pageEl.data('admin-page');
+      const page = (pageEl.data('admin-page') || '').toString();
 
       if (!page) return;
 
-      // Only load order.js on orders page
+      // Lazy-load order.js ONLY on orders page
       if (page === 'orders') {
-        const url = '/public/order.js?v=' + encodeURIComponent(window.__ASSET_V || '1');
+        const v = encodeURIComponent(window.__ASSET_V || '1');
+        const url = '/public/order.js?v=' + v;
+
         try {
-          await RD.util.loadScriptOnce(url);
+          await RD.util.loadScriptOnce(url, 'rd-orders-js');
+
+          // If your order.js uses window.RDOrders.init()
+          if (window.RDOrders && typeof window.RDOrders.init === 'function') {
+            window.RDOrders.init();
+          }
+
+          // If your order.js registers RD.pages.orders.mount()
+          if (RD.pages.orders && typeof RD.pages.orders.mount === 'function') {
+            RD.pages.orders.mount();
+            if (typeof RD.pages.orders.unmount === 'function') {
+              RD.router.onLeave(() => RD.pages.orders.unmount());
+            }
+          }
         } catch (e) {
           RD.ui.toast.err('Gagal memuat order.js');
-          return;
         }
+
+        return;
       }
 
-      // call mount if exists
+      // Other pages: mount if exists
       if (RD.pages[page] && typeof RD.pages[page].mount === 'function') {
         RD.pages[page].mount();
-        // auto unmount on route leave
         if (typeof RD.pages[page].unmount === 'function') {
           RD.router.onLeave(() => RD.pages[page].unmount());
         }
@@ -124,8 +160,12 @@ window.RD = window.RD || {};
 
       try {
         const html = await $.ajax({ method: 'GET', url });
+
+        // IMPORTANT: reset classes to avoid stacking
+        $content.removeClass('fade-up');
         $content.html(html);
         $content.addClass('fade-up');
+
         RD.ui.animateIn($content);
 
         await mountPage($content);
@@ -144,7 +184,8 @@ window.RD = window.RD || {};
           </div>
         `);
 
-        $(document).off('click', '#btn-admin-retry').on('click', '#btn-admin-retry', () => loadPartial(url));
+        $(document).off('click', '#btn-admin-retry')
+          .on('click', '#btn-admin-retry', () => loadPartial(url));
       }
     }
 
@@ -167,6 +208,7 @@ window.RD = window.RD || {};
     }
 
     function init() {
+      // CSRF attach for mutating requests
       $.ajaxSetup({
         beforeSend: function (xhr, settings) {
           const m = (settings.type || settings.method || 'GET').toUpperCase();
@@ -181,8 +223,16 @@ window.RD = window.RD || {};
     return { init, onLeave };
   })();
 
+  // =========================
+  // Boot
+  // =========================
   $(function () {
-    toastr.options = { closeButton: true, newestOnTop: true, progressBar: true, timeOut: 2500 };
+    toastr.options = {
+      closeButton: true,
+      newestOnTop: true,
+      progressBar: true,
+      timeOut: 2500
+    };
     RD.router.init();
   });
 
