@@ -57,16 +57,80 @@
 
   <div class="mt-4 card card-pad fade-up">
     <div class="card-row">
-      <div class="font-extrabold text-lg">Orders Grid</div>
-      <div class="pill"><i class="ri-database-2-line"></i> <span id="countBox">0</span> items</div>
+      <div class="min-w-0">
+        <div class="font-extrabold text-lg">Orders</div>
+        <div class="text-sm text-slate-500">Di desktop tampil table. Di mobile tampil card list.</div>
+      </div>
+
+      <div class="flex gap-2 flex-wrap items-center">
+        <div class="pill"><i class="ri-database-2-line"></i> <span id="countBox">0</span> items</div>
+
+        <div class="card soft" style="border-radius:18px;border:1px solid var(--line2);padding:10px 12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <div style="min-width:160px;">
+            <div class="label" style="margin:0 0 6px 0;">Per Page</div>
+            <select id="perPage" class="select">
+              <option value="5">5</option>
+              <option value="8">8</option>
+              <option value="10" selected>10</option>
+              <option value="15">15</option>
+              <option value="20">20</option>
+            </select>
+          </div>
+
+          <div style="min-width:220px;">
+            <div class="label" style="margin:0 0 6px 0;">Sort</div>
+            <select id="sortBy" class="select">
+              <option value="created_desc" selected>created_at (desc)</option>
+              <option value="created_asc">created_at (asc)</option>
+              <option value="amount_desc">gross_amount (desc)</option>
+              <option value="amount_asc">gross_amount (asc)</option>
+            </select>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div class="mt-4 rd-orders-scroll">
-      <div id="ordersGridMount"></div>
-    </div>
+    <div class="mt-4">
+      <div id="ordersLoading" class="hidden"></div>
 
-    <div class="mt-3 rd-grid-foot">
-      <div class="help" id="ordersHint">Menampilkan 5 per halaman. Gunakan search/filter di atas.</div>
+      <!-- DESKTOP TABLE -->
+      <div class="rd-only-desktop">
+        <div class="table-wrap">
+          <table class="table" style="min-width:1080px;">
+            <thead>
+              <tr>
+                <th style="width:210px;">Order</th>
+                <th style="width:220px;">Product</th>
+                <th style="width:260px;">Customer</th>
+                <th style="width:150px;">Amount</th>
+                <th style="width:130px;">Pay</th>
+                <th style="width:130px;">Fulfill</th>
+                <th style="width:170px;text-align:right;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="ordersTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- MOBILE CARDS -->
+      <div class="rd-only-mobile">
+        <div id="ordersCards"></div>
+      </div>
+
+      <!-- PAGER -->
+      <div class="mt-4 rd-pager">
+        <button class="btn btn-ghost" id="btnPrev"><i class="ri-arrow-left-line"></i> Prev</button>
+        <div class="rd-pager-info">
+          <div class="text-sm font-extrabold" id="pageInfo">Page 1 / 1</div>
+          <div class="text-xs text-slate-500" id="pageMeta">Menampilkan 0 dari 0</div>
+        </div>
+        <button class="btn btn-ghost" id="btnNext">Next <i class="ri-arrow-right-line"></i></button>
+      </div>
+
+      <div class="mt-3">
+        <div class="help" id="ordersHint">Gunakan search/filter di atas.</div>
+      </div>
     </div>
   </div>
 
@@ -85,53 +149,415 @@
         </div>
 
         <div class="rd-modal-body">
-          <div class="grid md:grid-cols-2 gap-3">
-            <div class="card soft card-pad" style="border-radius:18px;border:1px solid var(--line2);">
-              <div class="text-xs text-slate-500">Order ID</div>
-              <div class="font-extrabold mt-1 break-anywhere" id="mOrderId">-</div>
+          <div class="form-grid">
+            <div class="col-6">
+              <div class="card soft card-pad" style="border-radius:18px;border:1px solid var(--line2);">
+                <div class="text-xs text-slate-500">Order ID</div>
+                <div class="font-extrabold mt-1 break-anywhere" id="mOrderId">-</div>
 
-              <div class="text-xs text-slate-500 mt-3">Pay</div>
-              <div class="mt-1" id="mPayBadge">-</div>
+                <div class="text-xs text-slate-500 mt-3">Pay</div>
+                <div class="mt-1" id="mPayBadge">-</div>
 
-              <div class="text-xs text-slate-500 mt-3">Gross</div>
-              <div class="font-extrabold mt-1" id="mGross">-</div>
+                <div class="text-xs text-slate-500 mt-3">Gross</div>
+                <div class="font-extrabold mt-1" id="mGross">-</div>
 
-              <div class="text-xs text-slate-500 mt-3">Customer</div>
-              <div class="mt-1">
-                <div class="font-extrabold break-anywhere" id="mGameId">-</div>
-                <div class="text-xs text-slate-500 break-anywhere" id="mWA">-</div>
+                <div class="text-xs text-slate-500 mt-3">Customer</div>
+                <div class="mt-1">
+                  <div class="font-extrabold break-anywhere" id="mGameId">-</div>
+                  <div class="text-xs text-slate-500 break-anywhere" id="mWA">-</div>
+                </div>
+
+                <div class="text-xs text-slate-500 mt-3">Product</div>
+                <div class="font-extrabold mt-1 break-anywhere" id="mProd">-</div>
               </div>
             </div>
 
-            <div class="card soft card-pad" style="border-radius:18px;border:1px solid var(--line2);">
-              <div class="label">Fulfill Status</div>
-              <select id="mFulfill" class="select">
-                <option value="waiting">waiting</option>
-                <option value="processing">processing</option>
-                <option value="done">done</option>
-                <option value="rejected">rejected</option>
-              </select>
+            <div class="col-6">
+              <div class="card soft card-pad" style="border-radius:18px;border:1px solid var(--line2);">
+                <div class="label">Fulfill Status</div>
+                <select id="mFulfill" class="select">
+                  <option value="waiting">waiting</option>
+                  <option value="processing">processing</option>
+                  <option value="done">done</option>
+                  <option value="rejected">rejected</option>
+                </select>
 
-              <div class="label mt-3">Admin Note</div>
-              <textarea id="mNote" class="textarea" rows="5" placeholder="Catatan untuk customer (dipakai di template WA)"></textarea>
+                <div class="label mt-3">Admin Note</div>
+                <textarea id="mNote" class="textarea" rows="5" placeholder="Catatan untuk customer (dipakai di template WA)"></textarea>
 
-              <div class="mt-3">
-                <button class="btn btn-primary shimmer btn-block" id="saveBtn">
-                  <i class="ri-save-3-line"></i> Simpan
-                </button>
+                <div class="mt-3">
+                  <button class="btn btn-primary shimmer btn-block" id="saveBtn">
+                    <i class="ri-save-3-line"></i> Simpan
+                  </button>
+                </div>
+
+                <div class="mt-3 help">
+                  Saran: set “processing” saat mulai pengerjaan. “done”/“rejected” akan memicu template WA (jika enabled).
+                </div>
               </div>
+            </div>
 
-              <div class="mt-3 help">
-                Saran: set “processing” saat mulai pengerjaan. “done”/“rejected” akan memicu template WA (jika enabled).
+            <div class="col-12">
+              <div class="rd-modal-foot" style="padding:0;border:none;justify-content:flex-end;">
+                <button class="btn btn-ghost" id="closeModal2"><i class="ri-close-line"></i> Tutup</button>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="rd-modal-foot">
-          <button class="btn btn-ghost" id="closeModal2"><i class="ri-close-line"></i> Tutup</button>
-        </div>
       </div>
     </div>
   </div>
+
+  <script>
+    (function(){
+      const API_BASE = (window.__ADMIN_BASE || '/admin') + '/api';
+
+      let RAW = [];
+      let VIEW = [];
+      let PAGE = 1;
+      let PER_PAGE = Number($('#perPage').val() || 10);
+
+      let CURRENT = null;
+
+      function escapeHtml(s){
+        return String(s || '')
+          .replaceAll('&','&amp;')
+          .replaceAll('<','&lt;')
+          .replaceAll('>','&gt;')
+          .replaceAll('"','&quot;')
+          .replaceAll("'",'&#039;');
+      }
+
+      function rupiah(n){
+        return 'Rp ' + (Number(n||0)).toLocaleString('id-ID');
+      }
+
+      function fmtTime(s){
+        if(!s) return '-';
+        const d = new Date(s);
+        if (isNaN(d.getTime())) return String(s);
+        return d.toLocaleString('id-ID', { year:'numeric', month:'short', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+      }
+
+      function payBadge(st){
+        const v = String(st || '').toLowerCase();
+        if (v === 'settlement' || v === 'capture') return `<span class="badge good"><i class="ri-check-line"></i> ${escapeHtml(v)}</span>`;
+        if (v === 'pending') return `<span class="badge warn"><i class="ri-time-line"></i> pending</span>`;
+        if (v === 'expire' || v === 'cancel' || v === 'deny' || v === 'failure') return `<span class="badge bad"><i class="ri-close-line"></i> ${escapeHtml(v)}</span>`;
+        return `<span class="badge"><i class="ri-question-line"></i> ${escapeHtml(v || '-')}</span>`;
+      }
+
+      function fulfillBadge(st){
+        const v = String(st || '').toLowerCase();
+        if (v === 'done') return `<span class="badge good"><i class="ri-check-double-line"></i> done</span>`;
+        if (v === 'processing') return `<span class="badge info"><i class="ri-loader-3-line"></i> processing</span>`;
+        if (v === 'waiting') return `<span class="badge warn"><i class="ri-hourglass-2-line"></i> waiting</span>`;
+        if (v === 'rejected') return `<span class="badge bad"><i class="ri-close-circle-line"></i> rejected</span>`;
+        return `<span class="badge"><i class="ri-question-line"></i> ${escapeHtml(v || '-')}</span>`;
+      }
+
+      function orderRow(o){
+        const oid = escapeHtml(o.order_id);
+        const gid = escapeHtml(o.game_id || '-');
+        const nick = escapeHtml(o.nickname || '');
+        const wa = escapeHtml(o.whatsapp || '-');
+        const prod = escapeHtml(o.product_name || '-');
+        const time = fmtTime(o.created_at);
+
+        return `
+          <tr>
+            <td>
+              <div class="td-strong break-anywhere">${oid}</div>
+              <div class="td-muted" style="margin-top:4px;font-size:12px;">${time}</div>
+            </td>
+
+            <td>
+              <div class="td-strong break-anywhere">${prod}</div>
+              <div class="td-muted" style="margin-top:4px;font-size:12px;">
+                qty <b>${escapeHtml(o.qty)}</b> • unit ${escapeHtml(rupiah(o.unit_price))}
+              </div>
+            </td>
+
+            <td>
+              <div class="td-strong break-anywhere">${gid}${nick ? ' • ' + nick : ''}</div>
+              <div class="td-muted break-anywhere" style="margin-top:4px;font-size:12px;">${wa}</div>
+            </td>
+
+            <td>
+              <div class="td-strong">${rupiah(o.gross_amount)}</div>
+            </td>
+
+            <td>${payBadge(o.pay_status)}</td>
+            <td>${fulfillBadge(o.fulfill_status)}</td>
+
+            <td class="td-actions">
+              <button class="btn btn-sm js-edit" data-id="${oid}">
+                <i class="ri-pencil-line"></i> Edit
+              </button>
+            </td>
+          </tr>
+        `;
+      }
+
+      function orderCard(o){
+        const oid = escapeHtml(o.order_id);
+        const gid = escapeHtml(o.game_id || '-');
+        const nick = escapeHtml(o.nickname || '');
+        const wa = escapeHtml(o.whatsapp || '-');
+        const prod = escapeHtml(o.product_name || '-');
+
+        return `
+          <div class="rd-order-card">
+            <div class="rd-order-top">
+              <div class="min-w-0">
+                <div class="rd-order-id">${oid}</div>
+                <div class="rd-order-time">${fmtTime(o.created_at)}</div>
+              </div>
+              <button class="btn btn-sm rd-icon-edit js-edit" data-id="${oid}" aria-label="Edit">
+                <i class="ri-pencil-line"></i>
+              </button>
+            </div>
+
+            <div class="rd-order-product">
+              <div class="rd-order-prodname">${prod}</div>
+              <div class="rd-order-meta">qty <b>${escapeHtml(o.qty)}</b> • unit ${escapeHtml(rupiah(o.unit_price))}</div>
+            </div>
+
+            <div class="rd-order-grid">
+              <div class="rd-order-box">
+                <div class="rd-order-label">Customer</div>
+                <div class="rd-order-strong">${gid}${nick ? ' • ' + nick : ''}</div>
+                <div class="rd-order-sub">${wa}</div>
+              </div>
+              <div class="rd-order-box">
+                <div class="rd-order-label">Amount</div>
+                <div class="rd-order-strong">${rupiah(o.gross_amount)}</div>
+                <div class="rd-order-sub">${payBadge(o.pay_status)} ${fulfillBadge(o.fulfill_status)}</div>
+              </div>
+            </div>
+
+            ${o.admin_note ? `<div class="help" style="margin-top:10px;"><b>Note:</b> ${escapeHtml(o.admin_note)}</div>` : ``}
+          </div>
+        `;
+      }
+
+      function skeletonRows(n){
+        let html = '';
+        for (let i=0;i<n;i++){
+          html += `
+            <tr>
+              <td colspan="7" style="padding:10px 12px;">
+                <div class="skeleton" style="height:22px;border-radius:14px;"></div>
+              </td>
+            </tr>
+          `;
+        }
+        return html;
+      }
+
+      function skeletonCards(n){
+        let html = '';
+        for (let i=0;i<n;i++){
+          html += `<div class="skeleton" style="height:110px;border-radius:22px;margin-bottom:12px;"></div>`;
+        }
+        return html;
+      }
+
+      function setPager(total){
+        const pages = Math.max(1, Math.ceil(total / PER_PAGE));
+        if (PAGE > pages) PAGE = pages;
+
+        $('#pageInfo').text(`Page ${PAGE} / ${pages}`);
+        const start = total === 0 ? 0 : ((PAGE - 1) * PER_PAGE + 1);
+        const end = Math.min(total, PAGE * PER_PAGE);
+        $('#pageMeta').text(`Menampilkan ${start}-${end} dari ${total}`);
+
+        $('#btnPrev').prop('disabled', PAGE <= 1);
+        $('#btnNext').prop('disabled', PAGE >= pages);
+      }
+
+      function applySort(arr){
+        const s = String($('#sortBy').val() || 'created_desc');
+        const out = arr.slice();
+
+        function num(x){ return Number(x||0); }
+        function ts(x){ const d = new Date(x||0); return isNaN(d.getTime()) ? 0 : d.getTime(); }
+
+        if (s === 'created_desc') out.sort((a,b) => ts(b.created_at) - ts(a.created_at));
+        else if (s === 'created_asc') out.sort((a,b) => ts(a.created_at) - ts(b.created_at));
+        else if (s === 'amount_desc') out.sort((a,b) => num(b.gross_amount) - num(a.gross_amount));
+        else if (s === 'amount_asc') out.sort((a,b) => num(a.gross_amount) - num(b.gross_amount));
+
+        return out;
+      }
+
+      function render(){
+        PER_PAGE = Number($('#perPage').val() || 10);
+
+        const total = VIEW.length;
+        setPager(total);
+
+        const startIdx = (PAGE - 1) * PER_PAGE;
+        const pageItems = VIEW.slice(startIdx, startIdx + PER_PAGE);
+
+        $('#countBox').text(total);
+
+        // Desktop table
+        $('#ordersTbody').html(
+          pageItems.map(orderRow).join('') ||
+          `<tr><td colspan="7" class="td-muted" style="padding:16px;">No orders</td></tr>`
+        );
+
+        // Mobile cards
+        $('#ordersCards').html(
+          pageItems.map(orderCard).join('') ||
+          `<div class="text-slate-500 text-sm">No orders</div>`
+        );
+      }
+
+      async function load(){
+        $('#ordersTbody').html(skeletonRows(8));
+        $('#ordersCards').html(skeletonCards(5));
+
+        try{
+          const resp = await $.ajax({
+            method:'GET',
+            url: API_BASE + '/orders',
+            data: {
+              q: ($('#q').val() || '').trim(),
+              pay_status: $('#pay_status').val() || '',
+              fulfill_status: $('#fulfill_status').val() || ''
+            },
+            headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
+          });
+
+          if (!resp || resp.ok !== true) throw new Error(resp?.message || 'Failed load orders');
+
+          RAW = Array.isArray(resp.data) ? resp.data : [];
+          VIEW = applySort(RAW);
+
+          PAGE = 1;
+          render();
+
+          $('#ordersHint').text('Klik Edit untuk update fulfill status + catatan admin.');
+        } catch(e){
+          toastr.error(e.responseJSON?.message || e.message || 'Gagal memuat orders');
+          RAW = [];
+          VIEW = [];
+          PAGE = 1;
+          render();
+        }
+      }
+
+      function openModal(o){
+        CURRENT = o;
+
+        $('#mOrderId').text(o.order_id || '-');
+        $('#mPayBadge').html(payBadge(o.pay_status));
+        $('#mGross').text(rupiah(o.gross_amount));
+        $('#mGameId').text((o.game_id || '-') + (o.nickname ? ' • ' + o.nickname : ''));
+        $('#mWA').text(o.whatsapp || '-');
+        $('#mProd').text(o.product_name || '-');
+
+        $('#mFulfill').val(String(o.fulfill_status || 'waiting'));
+        $('#mNote').val(o.admin_note || '');
+
+        $('#modal').removeClass('hidden').addClass('is-open');
+        $('body').addClass('modal-open');
+      }
+
+      function closeModal(){
+        $('#modal').addClass('hidden').removeClass('is-open');
+        $('body').removeClass('modal-open');
+        CURRENT = null;
+      }
+
+      async function saveModal(){
+        if (!CURRENT) return;
+
+        const orderId = CURRENT.order_id;
+        const fulfill_status = $('#mFulfill').val();
+        const admin_note = ($('#mNote').val() || '').trim();
+
+        RD.ui.overlay(true);
+        try{
+          const resp = await $.ajax({
+            method:'POST',
+            url: API_BASE + '/orders/' + encodeURIComponent(orderId) + '/fulfill',
+            data: { fulfill_status, admin_note },
+            headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
+          });
+
+          if (!resp || resp.ok !== true) throw new Error(resp?.message || 'Failed');
+
+          toastr.success('Updated');
+
+          // patch local data so UI instant
+          const idx = RAW.findIndex(x => String(x.order_id) === String(orderId));
+          if (idx >= 0){
+            RAW[idx].fulfill_status = fulfill_status;
+            RAW[idx].admin_note = admin_note;
+            RAW[idx].updated_at = new Date().toISOString();
+          }
+          VIEW = applySort(RAW);
+          render();
+
+          closeModal();
+        } catch(e){
+          toastr.error(e.responseJSON?.message || e.message || 'Failed update');
+        } finally {
+          RD.ui.overlay(false);
+        }
+      }
+
+      // Events
+      const debouncedLoad = RD.util.debounce(() => { PAGE = 1; load(); }, 350);
+
+      $('#q').on('input', debouncedLoad);
+      $('#pay_status').on('change', () => { PAGE = 1; load(); });
+      $('#fulfill_status').on('change', () => { PAGE = 1; load(); });
+      $('#sortBy').on('change', () => { VIEW = applySort(RAW); PAGE = 1; render(); });
+      $('#perPage').on('change', () => { PAGE = 1; render(); });
+
+      $('#btnRefresh').on('click', () => { PAGE = 1; load(); });
+
+      $('#btnQuickPending').on('click', () => {
+        $('#pay_status').val('pending');
+        $('#fulfill_status').val('');
+        PAGE = 1;
+        load();
+      });
+
+      $('#btnQuickWaiting').on('click', () => {
+        $('#fulfill_status').val('waiting');
+        PAGE = 1;
+        load();
+      });
+
+      $('#btnPrev').on('click', () => { if (PAGE > 1){ PAGE--; render(); } });
+      $('#btnNext').on('click', () => {
+        const pages = Math.max(1, Math.ceil(VIEW.length / PER_PAGE));
+        if (PAGE < pages){ PAGE++; render(); }
+      });
+
+      // delegated edit
+      $(document).off('click', '.js-edit').on('click', '.js-edit', function(){
+        const oid = String($(this).data('id') || '');
+        const o = RAW.find(x => String(x.order_id) === oid);
+        if (!o) return;
+        openModal(o);
+      });
+
+      // modal close
+      $('#closeModal, #closeModal2, #modalBackdrop').on('click', closeModal);
+      $(document).on('keydown', function(e){
+        if (e.key === 'Escape') closeModal();
+      });
+      $('#saveBtn').on('click', saveModal);
+
+      // init
+      load();
+    })();
+  </script>
 </div>
