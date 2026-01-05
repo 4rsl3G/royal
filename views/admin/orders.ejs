@@ -58,25 +58,27 @@
   </div>
 </div>
 
-<!-- DESKTOP TABLE -->
-<div class="mt-4 card card-pad fade-up" id="tableWrap">
-  <div class="card-row">
-    <div class="font-extrabold text-lg">Table</div>
-    <div class="pill"><i class="ri-database-2-line"></i> <span id="countBox">0</span> rows</div>
+<!-- DESKTOP TABLE CARD (scroll INSIDE card body) -->
+<div class="mt-4 card fade-up" id="tableWrap">
+  <div class="card-pad card-head">
+    <div class="card-row">
+      <div class="font-extrabold text-lg">Table</div>
+      <div class="pill"><i class="ri-database-2-line"></i> <span id="countBox">0</span> rows</div>
+    </div>
   </div>
 
-  <!-- IMPORTANT: scroll area (orders-scroll) -->
-  <div class="mt-4 orders-scroll">
-    <table class="w-full text-sm">
+  <!-- scroll hanya di sini -->
+  <div class="card-body orders-scroll">
+    <table class="table">
       <thead>
-        <tr class="text-left text-slate-500">
-          <th class="py-2 pr-3">Order</th>
-          <th class="py-2 pr-3">Produk</th>
-          <th class="py-2 pr-3">Customer</th>
-          <th class="py-2 pr-3">Amount</th>
-          <th class="py-2 pr-3">Pay</th>
-          <th class="py-2 pr-3">Fulfill</th>
-          <th class="py-2 pr-3 text-right">Action</th>
+        <tr>
+          <th>Order</th>
+          <th>Produk</th>
+          <th>Customer</th>
+          <th>Amount</th>
+          <th>Pay</th>
+          <th>Fulfill</th>
+          <th class="td-actions">Action</th>
         </tr>
       </thead>
       <tbody id="tbody"></tbody>
@@ -84,64 +86,67 @@
   </div>
 </div>
 
-<!-- MOBILE CARDS -->
+<!-- MOBILE CARD LIST (scroll INSIDE card body) -->
 <div class="mt-4 fade-up" id="cardsWrap" style="display:none;">
-  <div class="card card-pad">
-    <div class="card-row">
-      <div class="font-extrabold text-lg">Orders</div>
-      <div class="pill"><i class="ri-database-2-line"></i> <span id="countBox2">0</span> items</div>
+  <div class="card">
+    <div class="card-pad card-head">
+      <div class="card-row">
+        <div class="font-extrabold text-lg">Orders</div>
+        <div class="pill"><i class="ri-database-2-line"></i> <span id="countBox2">0</span> items</div>
+      </div>
     </div>
 
-    <!-- IMPORTANT: cards scroll area -->
-    <div class="mt-4 orders-scroll" id="cardsBox"></div>
+    <!-- scroll hanya di sini -->
+    <div class="card-body orders-scroll" id="cardsBox"></div>
   </div>
 </div>
 
 <!-- MODAL -->
 <div id="modal" class="hidden fixed inset-0 z-50 bg-black/30 backdrop-blur-sm">
-  <!-- IMPORTANT: modal has its own scroll container -->
-  <div class="rd-modal-wrap">
+  <div class="rd-modal-wrap" role="dialog" aria-modal="true">
     <div class="rd-modal-card card card-pad" style="width:100%;max-width:680px;">
       <div class="card-row">
-        <div>
+        <div class="min-w-0">
           <div class="font-extrabold text-lg">Update Fulfill</div>
           <div class="text-sm text-slate-500">Update status + admin note (dipakai template WA).</div>
         </div>
         <button class="btn btn-ghost" id="closeModal"><i class="ri-close-line"></i></button>
       </div>
 
-      <div class="mt-4 grid md:grid-cols-2 gap-3">
-        <div class="card soft card-pad" style="border-radius:18px;border:1px solid var(--line2);">
-          <div class="text-xs text-slate-500">Order ID</div>
-          <div class="font-extrabold mt-1" id="mOrderId">-</div>
-          <div class="text-xs text-slate-500 mt-2">Pay</div>
-          <div class="mt-1" id="mPayBadge">-</div>
-          <div class="text-xs text-slate-500 mt-2">Gross</div>
-          <div class="font-extrabold mt-1" id="mGross">-</div>
-        </div>
+      <div class="rd-modal-body">
+        <div class="mt-4 grid md:grid-cols-2 gap-3">
+          <div class="card soft card-pad" style="border-radius:18px;border:1px solid var(--line2);">
+            <div class="text-xs text-slate-500">Order ID</div>
+            <div class="font-extrabold mt-1" id="mOrderId">-</div>
+            <div class="text-xs text-slate-500 mt-2">Pay</div>
+            <div class="mt-1" id="mPayBadge">-</div>
+            <div class="text-xs text-slate-500 mt-2">Gross</div>
+            <div class="font-extrabold mt-1" id="mGross">-</div>
+          </div>
 
-        <div class="card soft card-pad" style="border-radius:18px;border:1px solid var(--line2);">
-          <div class="label">Fulfill Status</div>
-          <select id="mFulfill" class="select">
-            <option value="waiting">waiting</option>
-            <option value="processing">processing</option>
-            <option value="done">done</option>
-            <option value="rejected">rejected</option>
-          </select>
+          <div class="card soft card-pad" style="border-radius:18px;border:1px solid var(--line2);">
+            <div class="label">Fulfill Status</div>
+            <select id="mFulfill" class="select">
+              <option value="waiting">waiting</option>
+              <option value="processing">processing</option>
+              <option value="done">done</option>
+              <option value="rejected">rejected</option>
+            </select>
 
-          <div class="label mt-3">Admin Note</div>
-          <textarea id="mNote" class="textarea" rows="4" placeholder="Catatan untuk customer (dipakai di template WA)"></textarea>
+            <div class="label mt-3">Admin Note</div>
+            <textarea id="mNote" class="textarea" rows="4" placeholder="Catatan untuk customer (dipakai di template WA)"></textarea>
 
-          <div class="mt-3">
-            <button class="btn btn-primary shimmer btn-block" id="saveBtn">
-              <i class="ri-save-3-line"></i> Simpan
-            </button>
+            <div class="mt-3">
+              <button class="btn btn-primary shimmer btn-block" id="saveBtn">
+                <i class="ri-save-3-line"></i> Simpan
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="mt-3 help">
-        Saran: set “processing” saat mulai pengerjaan. “done”/“rejected” akan memicu template WA (jika enabled + connected).
+        <div class="mt-3 help">
+          Saran: set “processing” saat mulai pengerjaan. “done”/“rejected” akan memicu template WA (jika enabled + connected).
+        </div>
       </div>
     </div>
   </div>
@@ -158,55 +163,61 @@
       .replaceAll('"','&quot;')
       .replaceAll("'",'&#039;');
   }
+  function escapeAttr(s){
+    return String(s || '')
+      .replaceAll('&','&amp;')
+      .replaceAll('"','&quot;')
+      .replaceAll("'",'&#039;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;');
+  }
 
   function payBadge(st){
     st = String(st||'').toLowerCase();
-    if(st === 'settlement' || st === 'capture') return `<span class="badge good"><i class="ri-check-line"></i> ${st}</span>`;
-    if(st === 'pending') return `<span class="badge warn"><i class="ri-time-line"></i> ${st}</span>`;
-    if(st === 'expire' || st === 'cancel' || st === 'deny' || st === 'failure') return `<span class="badge bad"><i class="ri-close-line"></i> ${st}</span>`;
-    return `<span class="badge"><i class="ri-question-line"></i> ${escapeHtml(st || '-')}</span>`;
+    if(st === 'settlement' || st === 'capture') return '<span class="badge good"><i class="ri-check-line"></i> ' + escapeHtml(st) + '</span>';
+    if(st === 'pending') return '<span class="badge warn"><i class="ri-time-line"></i> pending</span>';
+    if(st === 'expire' || st === 'cancel' || st === 'deny' || st === 'failure')
+      return '<span class="badge bad"><i class="ri-close-line"></i> ' + escapeHtml(st) + '</span>';
+    return '<span class="badge"><i class="ri-question-line"></i> ' + escapeHtml(st || '-') + '</span>';
   }
-
   function fulfillBadge(st){
     st = String(st||'').toLowerCase();
-    if(st === 'done') return `<span class="badge good"><i class="ri-check-double-line"></i> done</span>`;
-    if(st === 'processing') return `<span class="badge info"><i class="ri-loader-4-line"></i> processing</span>`;
-    if(st === 'waiting') return `<span class="badge warn"><i class="ri-hourglass-2-line"></i> waiting</span>`;
-    if(st === 'rejected') return `<span class="badge bad"><i class="ri-close-line"></i> rejected</span>`;
-    return `<span class="badge">${escapeHtml(st||'-')}</span>`;
+    if(st === 'done') return '<span class="badge good"><i class="ri-check-double-line"></i> done</span>';
+    if(st === 'processing') return '<span class="badge info"><i class="ri-loader-4-line"></i> processing</span>';
+    if(st === 'waiting') return '<span class="badge warn"><i class="ri-hourglass-2-line"></i> waiting</span>';
+    if(st === 'rejected') return '<span class="badge bad"><i class="ri-close-line"></i> rejected</span>';
+    return '<span class="badge">' + escapeHtml(st||'-') + '</span>';
   }
 
   let CURRENT = null;
   let DATA = [];
 
   function rowHtml(o){
-    const note = escapeHtml(o.admin_note || '');
+    const note = escapeAttr(o.admin_note || '');
     return `
-      <tr class="border-t">
-        <td class="py-2 pr-3">
-          <div class="font-extrabold">${escapeHtml(o.order_id)}</div>
-          <div class="text-xs text-slate-500">${escapeHtml(String(o.created_at).replace('T',' ').slice(0,19))}</div>
+      <tr>
+        <td>
+          <div class="td-strong">${escapeHtml(o.order_id)}</div>
+          <div class="td-muted" style="font-size:12px;">${escapeHtml(String(o.created_at).replace('T',' ').slice(0,19))}</div>
         </td>
-        <td class="py-2 pr-3">
-          <div class="font-extrabold">${escapeHtml(o.product_name)}</div>
-          <div class="text-xs text-slate-500">qty: ${Number(o.qty||0)} • unit: ${rupiah(o.unit_price||0)}</div>
+        <td>
+          <div class="td-strong">${escapeHtml(o.product_name)}</div>
+          <div class="td-muted" style="font-size:12px;">qty: ${Number(o.qty||0)} • unit: ${rupiah(o.unit_price||0)}</div>
         </td>
-        <td class="py-2 pr-3">
-          <div class="font-extrabold">${escapeHtml(o.game_id)}</div>
-          <div class="text-xs text-slate-500">${escapeHtml(o.nickname || '-')} • ${escapeHtml(o.whatsapp || '-')}</div>
+        <td>
+          <div class="td-strong">${escapeHtml(o.game_id)}</div>
+          <div class="td-muted" style="font-size:12px;">${escapeHtml(o.nickname || '-')} • ${escapeHtml(o.whatsapp || '-')}</div>
         </td>
-        <td class="py-2 pr-3">
-          <div class="font-extrabold">${rupiah(o.gross_amount)}</div>
-        </td>
-        <td class="py-2 pr-3">${payBadge(o.pay_status)}</td>
-        <td class="py-2 pr-3">${fulfillBadge(o.fulfill_status)}</td>
-        <td class="py-2 pr-3 text-right">
+        <td><div class="td-strong">${rupiah(o.gross_amount)}</div></td>
+        <td>${payBadge(o.pay_status)}</td>
+        <td>${fulfillBadge(o.fulfill_status)}</td>
+        <td class="td-actions">
           <button class="btn btn-sm js-edit"
-            data-oid="${escapeHtml(o.order_id)}"
-            data-pay="${escapeHtml(o.pay_status)}"
-            data-ful="${escapeHtml(o.fulfill_status)}"
+            data-oid="${escapeAttr(o.order_id)}"
+            data-pay="${escapeAttr(o.pay_status)}"
+            data-ful="${escapeAttr(o.fulfill_status)}"
             data-note="${note}"
-            data-gross="${escapeHtml(String(o.gross_amount||0))}">
+            data-gross="${escapeAttr(String(o.gross_amount||0))}">
             <i class="ri-pencil-line"></i> Edit
           </button>
         </td>
@@ -215,37 +226,39 @@
   }
 
   function cardHtml(o){
-    const note = escapeHtml(o.admin_note || '');
+    const note = escapeAttr(o.admin_note || '');
     return `
       <div class="card soft" style="border-radius:22px;border:1px solid var(--line2);padding:12px;margin-bottom:12px;">
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
-            <div class="font-extrabold truncate">${escapeHtml(o.order_id)}</div>
-            <div class="text-xs text-slate-500 mt-1">${escapeHtml(String(o.created_at).replace('T',' ').slice(0,19))}</div>
+            <div class="td-strong truncate">${escapeHtml(o.order_id)}</div>
+            <div class="td-muted" style="font-size:12px;margin-top:4px;">${escapeHtml(String(o.created_at).replace('T',' ').slice(0,19))}</div>
           </div>
           <button class="btn btn-sm js-edit"
-            data-oid="${escapeHtml(o.order_id)}"
-            data-pay="${escapeHtml(o.pay_status)}"
-            data-ful="${escapeHtml(o.fulfill_status)}"
+            data-oid="${escapeAttr(o.order_id)}"
+            data-pay="${escapeAttr(o.pay_status)}"
+            data-ful="${escapeAttr(o.fulfill_status)}"
             data-note="${note}"
-            data-gross="${escapeHtml(String(o.gross_amount||0))}">
+            data-gross="${escapeAttr(String(o.gross_amount||0))}">
             <i class="ri-pencil-line"></i>
           </button>
         </div>
 
         <div class="mt-3">
           <div class="text-sm font-extrabold">${escapeHtml(o.product_name)}</div>
-          <div class="text-xs text-slate-500">qty ${Number(o.qty||0)} • unit ${rupiah(o.unit_price||0)} • total <b>${rupiah(o.gross_amount||0)}</b></div>
+          <div class="td-muted" style="font-size:12px;">
+            qty ${Number(o.qty||0)} • unit ${rupiah(o.unit_price||0)} • total <b>${rupiah(o.gross_amount||0)}</b>
+          </div>
         </div>
 
         <div class="mt-3 grid grid-cols-2 gap-2">
           <div class="card soft" style="border-radius:18px;border:1px solid var(--line2);padding:10px;">
-            <div class="text-xs text-slate-500">Customer</div>
-            <div class="font-extrabold truncate">${escapeHtml(o.game_id)}</div>
-            <div class="text-xs text-slate-500 truncate">${escapeHtml(o.nickname || '-')} • ${escapeHtml(o.whatsapp || '-')}</div>
+            <div class="td-muted" style="font-size:12px;">Customer</div>
+            <div class="td-strong truncate">${escapeHtml(o.game_id)}</div>
+            <div class="td-muted truncate" style="font-size:12px;">${escapeHtml(o.nickname || '-')} • ${escapeHtml(o.whatsapp || '-')}</div>
           </div>
           <div class="card soft" style="border-radius:18px;border:1px solid var(--line2);padding:10px;">
-            <div class="text-xs text-slate-500">Status</div>
+            <div class="td-muted" style="font-size:12px;">Status</div>
             <div class="mt-1">${payBadge(o.pay_status)}</div>
             <div class="mt-2">${fulfillBadge(o.fulfill_status)}</div>
           </div>
@@ -283,7 +296,7 @@
       $('#cardsWrap').hide();
       $('#tableWrap').show();
       $('#countBox').text(data.length);
-      $('#tbody').html(data.map(rowHtml).join('') || `<tr><td class="py-3 text-slate-500" colspan="7">No data</td></tr>`);
+      $('#tbody').html(data.map(rowHtml).join('') || `<tr><td colspan="7" style="padding:12px;color:#64748b;">No data</td></tr>`);
     }
   }
 
@@ -294,67 +307,57 @@
       fulfill_status: $('#fulfill_status').val()
     });
 
-    // skeleton
     $('#cardsBox').html(RD.ui.skeletonBlocks ? RD.ui.skeletonBlocks(6) : '');
     if (RD.ui.skeletonTableRows) RD.ui.skeletonTableRows('#tbody', 7, 7);
 
     try {
       const resp = await $.ajax({
         method:'GET',
-        url: window.__ADMIN_BASE + '/api/orders?' + qs,
-        headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
+        url: window.__ADMIN_BASE + '/api/orders?' + qs
       });
-      if (!resp.ok) throw new Error('Failed');
-
+      if (!resp.ok) throw new Error(resp.message || 'Failed');
       DATA = resp.data || [];
       renderResponsive(DATA);
-
     } catch(e) {
       toastr.error(e.message || 'Failed load orders');
-      $('#tbody').html(`<tr><td class="py-3 text-rose-600" colspan="7">Error</td></tr>`);
-      $('#cardsBox').html(`<div class="text-rose-600 text-sm">Error</div>`);
     }
   }
 
-  // events
   $('#btnRefresh').on('click', load);
 
   $('#btnQuickPending').on('click', function(){
-    $('#pay_status').val('pending');
-    $('#fulfill_status').val('');
+    $('#pay_status').val('pending'); $('#fulfill_status').val('');
     load();
   });
 
   $('#btnQuickWaiting').on('click', function(){
-    $('#fulfill_status').val('waiting');
-    $('#pay_status').val('');
+    $('#fulfill_status').val('waiting'); $('#pay_status').val('');
     load();
   });
 
   $('#q').on('keyup', RD.util.debounce(load, 400));
   $('#pay_status, #fulfill_status').on('change', load);
 
-  // delegated edit (works for table + cards)
-  $(document).off('click', '.js-edit').on('click', '.js-edit', function(){
-    const data = {
+  $(document).off('click.orders', '.js-edit').on('click.orders', '.js-edit', function(){
+    openModalFromData({
       oid: String($(this).data('oid') || ''),
       pay: String($(this).data('pay') || ''),
       ful: String($(this).data('ful') || ''),
       note: String($(this).data('note') || ''),
       gross: String($(this).data('gross') || '0')
-    };
-    openModalFromData(data);
+    });
   });
 
-  $('#closeModal').on('click', closeModal);
-  $('#modal').on('click', (e) => { if (e.target.id==='modal') closeModal(); });
+  $(document).off('click.orders', '#closeModal').on('click.orders', '#closeModal', closeModal);
+  $(document).off('click.orders', '#modal').on('click.orders', '#modal', function(e){
+    if (e.target.id === 'modal') closeModal();
+  });
 
-  // ESC close
-  $(document).on('keydown', function(e){
+  $(document).off('keydown.orders').on('keydown.orders', function(e){
     if (e.key === 'Escape' && !$('#modal').hasClass('hidden')) closeModal();
   });
 
-  $('#saveBtn').on('click', async function(){
+  $(document).off('click.orders', '#saveBtn').on('click.orders', '#saveBtn', async function(){
     if (!CURRENT) return;
     RD.ui.overlay(true);
     try {
@@ -364,8 +367,7 @@
         data: {
           fulfill_status: $('#mFulfill').val(),
           admin_note: $('#mNote').val()
-        },
-        headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
+        }
       });
       if (!resp.ok) throw new Error(resp.message || 'Failed');
       toastr.success('Saved');
@@ -378,12 +380,14 @@
     }
   });
 
-  // rerender on resize (for responsive switch)
-  const onResize = RD.util.debounce(function(){
-    renderResponsive(DATA || []);
-  }, 120);
+  const onResize = RD.util.debounce(() => renderResponsive(DATA || []), 120);
   window.addEventListener('resize', onResize);
-  RD.router.onLeave(() => window.removeEventListener('resize', onResize));
+
+  RD.router.onLeave(() => {
+    window.removeEventListener('resize', onResize);
+    $(document).off('.orders');
+    closeModal();
+  });
 
   load();
 </script>
