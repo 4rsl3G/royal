@@ -1,0 +1,23 @@
+<div class="bg-white border rounded-2xl p-6 shadow-sm fade-up">
+  <div class="flex items-center gap-3">
+    <div class="w-12 h-12 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center">
+      <i class="ri-close-line text-2xl"></i>
+    </div>
+    <div>
+      <div class="text-2xl font-extrabold">Pembayaran Gagal / Expired</div>
+      <div class="text-slate-500 text-sm">Kamu bisa coba lagi dengan membuat order baru.</div>
+    </div>
+  </div>
+
+  <div class="mt-4 bg-slate-50 border rounded-xl p-3">
+    <div class="text-xs text-slate-500">Order ID</div>
+    <div class="font-extrabold text-lg"><%= orderId %></div>
+  </div>
+
+  <div class="mt-4 flex flex-wrap gap-2">
+    <a class="btn-ghost" href="/#\/order/<%= encodeURIComponent(orderId) %>">
+      <i class="ri-file-list-2-line"></i> Lihat Detail
+    </a>
+    <a class="btn-primary" href="/#\/checkout"><i class="ri-shopping-cart-2-line"></i> Buat Order Baru</a>
+  </div>
+</div>
