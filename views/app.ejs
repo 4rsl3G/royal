@@ -24,7 +24,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
 
   <!-- App CSS -->
-  <link rel="stylesheet" href="/public/app.css" />
+  <link rel="stylesheet" href="/public/app.css?v=<%= settings.assets_version || '1' %>">
+<script src="/public/app.js?v=<%= settings.assets_version || '1' %>"></script>
 </head>
 
 <body class="min-h-screen bg-slate-50 text-slate-900">
