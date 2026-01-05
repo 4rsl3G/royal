@@ -5,6 +5,7 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const morgan = require('morgan');
+const csrf = require('csurf');
 
 const { pool } = require('./db'); // mysql2/promise pool
 const { buildHelmet, publicLimiter, loginLimiter, bodyLimit, originAllowlist } = require('./middleware/security');
@@ -19,9 +20,8 @@ const webhookRoutes = require('./routes/webhook.routes');
 const app = express();
 app.disable('x-powered-by');
 
-// ✅ Trust proxy (Nginx/Cloudflare) so req.ip works and rate-limit won't complain
-// Default 1: cocok untuk Nginx reverse proxy ke node (umumnya).
-app.set('trust proxy', Number(process.env.TRUST_PROXY || 1));
+// ✅ IMPORTANT behind cloudflare/nginx to fix rate-limit X-Forwarded-For warnings
+app.set('trust proxy', 1);
 
 const PORT = process.env.PORT || 3000;
 
@@ -32,18 +32,13 @@ const ADMIN_BASE_PATH = (process.env.ADMIN_BASE_PATH || '/admin').startsWith('/'
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-if (process.env.LOG_REQUESTS === 'true') {
-  app.use(morgan('combined'));
-}
+if (process.env.LOG_REQUESTS === 'true') app.use(morgan('combined'));
 
-// ✅ Security headers + CSP
 app.use(buildHelmet());
 app.use(bodyLimit);
-
-// Cookies
 app.use(cookieParser());
 
-// ✅ Static (pastikan ada sebelum routes)
+// Static
 app.use('/public', express.static(path.join(__dirname, 'public'), { maxAge: '1h' }));
 app.use('/uploads', express.static(path.join(__dirname, process.env.UPLOAD_DIR || 'uploads'), { maxAge: '1h' }));
 
@@ -67,9 +62,7 @@ class MySQLSessionStore extends session.Store {
       try {
         const now = Math.floor(Date.now() / 1000);
         await this.pool.execute(`DELETE FROM ${this.table} WHERE expires < ?`, [now]);
-      } catch (_) {
-        // ignore cleanup errors
-      }
+      } catch (_) {}
     }, this.cleanupIntervalMs).unref();
   }
 
@@ -146,10 +139,8 @@ class MySQLSessionStore extends session.Store {
   }
 }
 
-// ✅ Session store
 const store = new MySQLSessionStore({ pool, table: 'sessions' });
 
-// ✅ Session middleware
 app.use(
   session({
     name: 'rd.sid',
@@ -166,57 +157,65 @@ app.use(
   })
 );
 
-// ✅ Body parsers
+// Body parsers
 app.use(express.json({ limit: '300kb' }));
 app.use(express.urlencoded({ extended: true, limit: '300kb' }));
 
-// ✅ Settings cache helper (site_name, midtrans keys, templates, dll)
+// Attach settings helper
 app.use(attachSettings);
 
-// ✅ Origin allowlist untuk POST/PUT/DELETE (webhook bypass ada di middleware security.js)
+// Origin allowlist for mutating requests (except webhook)
 app.use(originAllowlist);
 
-// ✅ Rate limiters
+// Rate limiters
 app.use('/api', publicLimiter);
-
-// Login admin rate-limit (GET/POST login)
 app.use(`${ADMIN_BASE_PATH}/login`, loginLimiter);
 
-// ✅ IMPORTANT:
-// Banyak kasus CSRF “invalid/expired” di login terjadi karena login dikirim AJAX,
-// tapi token tidak di-attach atau session belum stabil.
-// Cara paling stabil: bypass CSRF di login routes.
-// (CSRF tetap aktif untuk admin API lain / dashboard bila kamu pasang di routes/middleware csurf.)
-app.use(`${ADMIN_BASE_PATH}/login`, (req, res, next) => next());
+/**
+ * ✅ CSRF (csurf)
+ * - Use session-based secret
+ * - Accept token from header/cookie/body
+ * - Bypass webhook
+ */
+const csrfProtection = csrf({
+  cookie: false,
+  value: (req) => {
+    // priority: header -> body -> query
+    return (
+      req.headers['x-csrf-token'] ||
+      req.headers['x-xsrf-token'] ||
+      (req.body && req.body._csrf) ||
+      (req.query && req.query._csrf) ||
+      ''
+    );
+  }
+});
 
-// ✅ Routes
+// Only bypass midtrans webhook
+function csrfUnlessWebhook(req, res, next) {
+  if (req.path === '/midtrans/notification') return next();
+  return csrfProtection(req, res, next);
+}
+
+// apply csrf for all routes except webhook
+app.use(csrfUnlessWebhook);
+
+// Routes
 app.use('/', publicRoutes);
 app.use('/api', apiRoutes);
-
-// Webhook must be reachable (no CSRF)
 app.use('/', webhookRoutes);
 
-// Admin
 app.use(ADMIN_BASE_PATH, adminRoutes);
 app.use(`${ADMIN_BASE_PATH}/api`, adminApiRoutes);
 
 // Health
 app.get('/healthz', (req, res) => res.json({ ok: true }));
 
-// 404 fallback (optional, but nice)
-app.use((req, res, next) => {
-  if (req.path.startsWith('/api') || req.path.includes('/api/')) {
-    return res.status(404).json({ ok: false, message: 'Not found' });
-  }
-  return res.status(404).send('Not found');
-});
-
 // Error handler
 app.use((err, req, res, next) => {
   if (err && err.code === 'EBADCSRFTOKEN') {
     return res.status(403).json({ ok: false, message: 'CSRF token invalid/expired. Refresh page.' });
   }
-
   console.error('[ERR]', err);
   const status = err.status || 500;
 
