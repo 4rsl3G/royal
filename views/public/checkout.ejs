@@ -1,0 +1,151 @@
+<div class="fade-up">
+  <h2 class="text-2xl font-extrabold">Checkout</h2>
+  <p class="text-slate-500 text-sm">Lengkapi data dan lakukan pembayaran via Midtrans Snap.</p>
+</div>
+
+<div class="mt-5 grid lg:grid-cols-2 gap-4">
+  <form id="checkoutForm" class="bg-white border rounded-2xl p-4 shadow-sm fade-up">
+    <div class="grid gap-3">
+      <div>
+        <label class="label">Pilih Produk</label>
+        <select name="productId" class="input" required>
+          <option value="">-- pilih --</option>
+          <% products.forEach(p => { %>
+            <option
+              value="<%= p.id %>"
+              data-price-type="<%= p.price_type %>"
+              data-price="<%= p.price %>"
+              data-ppi="<%= p.price_per_item %>">
+              <%= p.name %> - Rp <%= (p.price_type==='fixed' ? p.price : p.price_per_item) %><%= p.price_type==='per_item' ? '/item' : '' %>
+            </option>
+          <% }) %>
+        </select>
+        <div class="hint">Harga akan dihitung otomatis.</div>
+      </div>
+
+      <div class="grid sm:grid-cols-2 gap-3">
+        <div>
+          <label class="label">Game ID</label>
+          <input name="gameId" class="input" placeholder="Contoh: 123456" required />
+        </div>
+        <div>
+          <label class="label">Nickname</label>
+          <input name="nickname" class="input" placeholder="Opsional" />
+        </div>
+      </div>
+
+      <div class="grid sm:grid-cols-2 gap-3">
+        <div>
+          <label class="label">WhatsApp</label>
+          <input name="whatsapp" class="input" placeholder="62xxxxxxxx" required />
+          <div class="hint">Format: 62xxxx / +62xxxx / 0xxxx (akan dinormalisasi).</div>
+        </div>
+        <div>
+          <label class="label">Qty</label>
+          <input name="qty" type="number" min="1" value="1" class="input" />
+          <div class="hint">Jika produk fixed, qty otomatis 1.</div>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 border rounded-xl p-3 flex items-center justify-between">
+        <div>
+          <div class="text-xs text-slate-500">Total</div>
+          <div class="font-extrabold text-lg" id="totalText">Rp 0</div>
+        </div>
+        <button type="submit" class="btn-primary">
+          <i class="ri-secure-payment-line"></i> Bayar Sekarang
+        </button>
+      </div>
+
+      <div class="text-xs text-slate-500">
+        Dengan melanjutkan, kamu setuju data dipakai untuk proses topup dan notifikasi.
+      </div>
+    </div>
+  </form>
+
+  <div class="bg-white border rounded-2xl p-4 shadow-sm fade-up">
+    <div class="font-bold text-lg">Ringkasan</div>
+    <div class="mt-2 text-sm text-slate-600 leading-relaxed">
+      Setelah klik <b>Bayar Sekarang</b>, Snap akan muncul. Setelah pembayaran sukses/pending, kamu akan diarahkan ke halaman order.
+    </div>
+
+    <div class="mt-4 grid gap-2 text-sm">
+      <div class="flex items-center gap-2"><i class="ri-shield-check-line"></i> Pembayaran via Midtrans</div>
+      <div class="flex items-center gap-2"><i class="ri-refresh-line"></i> Status order auto-polling</div>
+      <div class="flex items-center gap-2"><i class="ri-whatsapp-line"></i> Notifikasi WA jika diaktifkan</div>
+    </div>
+
+    <div class="mt-5 bg-slate-50 border rounded-xl p-3 text-xs text-slate-600">
+      Tips: Simpan <b>Order ID</b> untuk tracking.
+    </div>
+  </div>
+</div>
+
+<script>
+  function rupiah(n){ return 'Rp ' + (Number(n||0)).toLocaleString('id-ID'); }
+
+  function computeTotal(){
+    const $opt = $('select[name=productId] option:selected');
+    const pt = $opt.data('price-type');
+    const price = Number($opt.data('price') || 0);
+    const ppi = Number($opt.data('ppi') || 0);
+    let qty = Number($('input[name=qty]').val() || 1);
+    if (!qty || qty < 1) qty = 1;
+
+    if (pt === 'fixed') {
+      $('input[name=qty]').val(1).prop('disabled', true);
+      $('#totalText').text(rupiah(price));
+    } else {
+      $('input[name=qty]').prop('disabled', false);
+      $('#totalText').text(rupiah(ppi * qty));
+    }
+  }
+
+  $('select[name=productId], input[name=qty]').on('change keyup', computeTotal);
+
+  // restore selected product from localStorage
+  const saved = window.localStorage.getItem('rd_selected_product');
+  if (saved) {
+    $('select[name=productId]').val(saved);
+    window.localStorage.removeItem('rd_selected_product');
+  }
+  computeTotal();
+
+  $('#checkoutForm').on('submit', async function(e){
+    e.preventDefault();
+    const form = $(this).serialize();
+
+    RD.ui.overlay(true);
+    try {
+      const resp = await $.ajax({
+        method: 'POST',
+        url: '/api/order/create',
+        data: form,
+        headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
+      });
+
+      if (!resp.ok) throw new Error(resp.message || 'Gagal');
+
+      const orderId = resp.orderId;
+      const token = resp.token;
+
+      if (!window.snap) {
+        toastr.error('Snap tidak ter-load. Cek CSP / client key.');
+        RD.ui.overlay(false);
+        return;
+      }
+
+      window.snap.pay(token, {
+        onSuccess: function(){ window.location.hash = '#/order/' + encodeURIComponent(orderId); },
+        onPending: function(){ window.location.hash = '#/order/' + encodeURIComponent(orderId); },
+        onError: function(){ window.location.hash = '#/order/' + encodeURIComponent(orderId); },
+        onClose: function(){ window.location.hash = '#/order/' + encodeURIComponent(orderId); }
+      });
+
+    } catch (err) {
+      toastr.error(err.message || 'Gagal membuat order');
+    } finally {
+      RD.ui.overlay(false);
+    }
+  });
+</script>
