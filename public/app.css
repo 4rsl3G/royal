@@ -453,3 +453,80 @@ body{
   .hero-wrap{ border-radius: 22px; }
   .hero-wrap.p-5{ padding: 16px !important; } /* override tailwind padding class */
 }
+
+/* ===== Popular list (fix iOS clip/overflow) ===== */
+.popular-item{
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid rgba(226,232,240,.95);
+  border-radius: 18px;
+  padding: 12px;
+  background: rgba(255,255,255,.70);
+  transition: background .15s ease, transform .15s ease;
+  max-width: 100%;
+}
+.popular-item:hover{
+  background: rgba(255,255,255,.92);
+  transform: translateY(-1px);
+}
+
+.popular-thumb{
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: rgba(15,23,42,.05);
+  border: 1px solid rgba(226,232,240,.9);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.popular-meta{ min-width: 0; }
+.popular-name{
+  font-weight: 900;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.popular-sub{
+  font-size: 12px;
+  color: rgba(100,116,139,1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+.popular-badges{
+  font-size: 12px;
+  color: rgba(100,116,139,1);
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 2px;
+  flex-wrap: wrap;
+}
+.popular-badges i{ font-size: 14px; }
+
+.popular-price{
+  text-align: right;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.popular-rp{
+  font-weight: 900;
+}
+.popular-pt{
+  font-size: 12px;
+  color: rgba(100,116,139,1);
+  margin-top: 2px;
+}
+
+/* iOS kecil: perkecil thumb + gap biar makin aman */
+@media (max-width: 380px){
+  .popular-item{ grid-template-columns: 50px minmax(0, 1fr) auto; gap: 10px; }
+  .popular-thumb{ width: 46px; height: 46px; border-radius: 14px; }
+}
