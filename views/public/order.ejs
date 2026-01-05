@@ -1,0 +1,117 @@
+<% if (!order) { %>
+  <div class="bg-white border rounded-2xl p-5">
+    <div class="font-bold text-lg">Order tidak ditemukan</div>
+    <div class="text-sm text-slate-500 mt-1">Periksa Order ID kamu.</div>
+    <a href="/#\/home" class="btn-ghost mt-4 inline-flex"><i class="ri-home-5-line"></i> Kembali</a>
+  </div>
+<% } else { %>
+  <div class="fade-up flex flex-col md:flex-row md:items-start gap-4">
+    <div class="bg-white border rounded-2xl p-5 shadow-sm flex-1">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="text-xs text-slate-500">Order ID</div>
+          <div class="text-xl font-extrabold"><%= order.order_id %></div>
+        </div>
+        <div class="text-right">
+          <div class="text-xs text-slate-500">Total</div>
+          <div class="text-xl font-extrabold">Rp <%= order.gross_amount %></div>
+        </div>
+      </div>
+
+      <div class="mt-4 grid sm:grid-cols-2 gap-3 text-sm">
+        <div class="bg-slate-50 border rounded-xl p-3">
+          <div class="text-slate-500 text-xs">Produk</div>
+          <div class="font-bold"><%= order.product_name %></div>
+          <div class="text-xs text-slate-500"><%= order.sku %></div>
+        </div>
+        <div class="bg-slate-50 border rounded-xl p-3">
+          <div class="text-slate-500 text-xs">Qty</div>
+          <div class="font-bold"><%= order.qty %></div>
+          <div class="text-xs text-slate-500">Unit: Rp <%= order.unit_price %></div>
+        </div>
+        <div class="bg-slate-50 border rounded-xl p-3">
+          <div class="text-slate-500 text-xs">Game ID</div>
+          <div class="font-bold"><%= order.game_id %></div>
+          <div class="text-xs text-slate-500"><%= order.nickname || '-' %></div>
+        </div>
+        <div class="bg-slate-50 border rounded-xl p-3">
+          <div class="text-slate-500 text-xs">WhatsApp</div>
+          <div class="font-bold"><%= order.whatsapp %></div>
+          <div class="text-xs text-slate-500">Notifikasi jika aktif</div>
+        </div>
+      </div>
+
+      <div class="mt-4 flex flex-wrap items-center gap-2">
+        <span class="pill" id="payPill">Pay: <%= order.pay_status %></span>
+        <span class="pill" id="fulfillPill">Fulfill: <%= order.fulfill_status %></span>
+        <span class="text-xs text-slate-500">Update otomatis tiap 3-4 detik</span>
+      </div>
+
+      <div class="mt-4">
+        <div class="text-xs text-slate-500">Catatan Admin</div>
+        <div class="bg-white border rounded-xl p-3 text-sm" id="noteBox"><%= order.admin_note || '—' %></div>
+      </div>
+
+      <div class="mt-4 flex gap-2">
+        <button class="btn-ghost" id="btnRefresh"><i class="ri-refresh-line"></i> Refresh</button>
+        <a class="btn-ghost" href="/#\/checkout"><i class="ri-shopping-cart-2-line"></i> Buat Order Baru</a>
+      </div>
+    </div>
+
+    <div class="bg-white border rounded-2xl p-5 shadow-sm w-full md:w-[360px] fade-up">
+      <div class="font-bold text-lg">Status</div>
+      <div class="mt-2 text-sm text-slate-600">
+        Halaman ini akan mengarahkan kamu otomatis ke <b>Success</b> atau <b>Failed</b> ketika status pembayaran final.
+      </div>
+
+      <div class="mt-4 bg-slate-50 border rounded-xl p-3">
+        <div class="text-xs text-slate-500">Tips</div>
+        <div class="text-sm">Jika kamu menutup Snap sebelum bayar, kamu bisa bayar ulang dari dashboard Midtrans (jika tersedia). Atau buat order baru.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const ORDER_ID = "<%= order.order_id %>";
+
+    function isFinal(s){
+      s = String(s||'').toLowerCase();
+      return ['settlement','capture','expire','cancel','deny','failure'].includes(s);
+    }
+    function isSuccess(s){
+      s = String(s||'').toLowerCase();
+      return ['settlement','capture'].includes(s);
+    }
+
+    async function poll(){
+      try {
+        const resp = await $.ajax({
+          method:'GET',
+          url:'/api/order/status/' + encodeURIComponent(ORDER_ID),
+          headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
+        });
+
+        if (resp.ok) {
+          $('#payPill').text('Pay: ' + resp.pay_status);
+          $('#fulfillPill').text('Fulfill: ' + resp.fulfill_status);
+
+          if (resp.isFinal) {
+            if (isSuccess(resp.pay_status)) {
+              window.location.hash = '#/success/' + encodeURIComponent(ORDER_ID);
+            } else {
+              window.location.hash = '#/failed/' + encodeURIComponent(ORDER_ID);
+            }
+          }
+        }
+      } catch(e) {}
+    }
+
+    $('#btnRefresh').on('click', poll);
+
+    // poll every 3.5s
+    poll();
+    const t = setInterval(poll, 3500);
+    // stop interval on page change
+    RD.router.onLeave(() => clearInterval(t));
+  </script>
+<% } %>
