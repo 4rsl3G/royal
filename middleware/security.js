@@ -1,13 +1,14 @@
-// middleware/security.js  (final)
-// NOTE: Ini sebenarnya security middleware (helmet + rate limit + origin allowlist).
-// Dipakai dari server.js: const { buildHelmet, publicLimiter, loginLimiter, bodyLimit, originAllowlist } = require('./middleware/validate');
+// middleware/security.js (FINAL)
+// Helmet + CSP (CDN + AOS + Midtrans Snap) + rate limit + origin allowlist + body size guard
+// Dipakai di server.js:
+// const { buildHelmet, publicLimiter, loginLimiter, bodyLimit, originAllowlist } = require('./middleware/security');
 
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 
 /**
- * Extra small guard (body size limit sudah di express.json/urlencoded).
- * Sekalian set header anti-sniffing.
+ * Extra small guard (express.json/urlencoded sudah limit 300kb)
+ * Sekalian set header anti-sniff.
  */
 const bodyLimit = (req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -17,13 +18,13 @@ const bodyLimit = (req, res, next) => {
 function buildHelmet() {
   const isProd = process.env.NODE_ENV === 'production';
 
-  // CSP: allow Tailwind CDN, jQuery, Toastr, RemixIcon, Google Fonts, AOS (unpkg), Midtrans Snap
-  // IMPORTANT:
-  // - AOS diambil dari unpkg.com
-  // - Midtrans Snap bisa sandbox / production
-  // - Snap pakai iframe -> frameSrc wajib allow
-  // - connectSrc allow api midtrans + sandbox
-  const cspDirectives = {
+  // CSP: allow Tailwind CDN, jQuery, Toastr, RemixIcon, Google Fonts Inter, AOS (unpkg), Midtrans Snap
+  // IMPORTANT NOTES:
+  // - Tailwind CDN membutuhkan unsafe-eval (dan kadang unsafe-inline). Ini tradeoff.
+  //   Kalau mau paling ketat, build tailwind sendiri (bukan CDN).
+  // - Snap memakai iframe: frameSrc harus allow app.midtrans.com + sandbox.
+  // - AOS diambil dari unpkg.com: harus allow di scriptSrc & styleSrc.
+  const directives = {
     defaultSrc: ["'self'"],
     baseUri: ["'self'"],
     objectSrc: ["'none'"],
@@ -38,11 +39,11 @@ function buildHelmet() {
 
     scriptSrc: [
       "'self'",
-      // NOTE: Tailwind CDN butuh inline/eval untuk dev; kamu bisa harden nanti kalau pakai tailwind build.
+      // Needed for Tailwind CDN + some CDNs; tradeoff for security.
       "'unsafe-inline'",
       "'unsafe-eval'",
 
-      // CDN umum
+      // CDNs
       "https://cdn.tailwindcss.com",
       "https://code.jquery.com",
       "https://cdnjs.cloudflare.com",
@@ -78,37 +79,42 @@ function buildHelmet() {
 
     connectSrc: [
       "'self'",
-      // Midtrans API endpoints (CoreApi / Snap callbacks, dll)
+
+      // Midtrans API endpoints (server to midtrans; browser biasanya tidak langsung call,
+      // tapi Snap/JS bisa butuh connect)
       "https://api.sandbox.midtrans.com",
       "https://api.midtrans.com",
 
-      // Snap script sometimes calls these
+      // Snap endpoints
       "https://app.sandbox.midtrans.com",
       "https://app.midtrans.com"
-    ],
-
-    // kalau prod: paksa https
-    ...(isProd ? { upgradeInsecureRequests: [] } : {})
+    ]
   };
 
+  // If production, enforce https
+  if (isProd) {
+    directives.upgradeInsecureRequests = [];
+  }
+
   return helmet({
+    // CSP
     contentSecurityPolicy: {
       useDefaults: false,
-      directives: cspDirectives
+      directives
     },
 
-    // Snap iframe bisa bermasalah kalau COEP aktif
+    // Snap iframe can break if COEP enabled
     crossOriginEmbedderPolicy: false,
 
-    // lain-lain hardening
+    // Sensible defaults
     referrerPolicy: { policy: 'no-referrer' },
-    frameguard: { action: 'deny' }, // same as frameAncestors none
-    noSniff: true,
-    hidePoweredBy: true
+
+    // Use frameguard too (redundant with frameAncestors, but ok)
+    frameguard: { action: 'deny' }
   });
 }
 
-// Rate limit public
+// Rate limit public API traffic
 const publicLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 120,
@@ -116,7 +122,7 @@ const publicLimiter = rateLimit({
   legacyHeaders: false
 });
 
-// Rate limit login
+// Rate limit login attempts
 const loginLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 15,
@@ -126,29 +132,29 @@ const loginLimiter = rateLimit({
 
 /**
  * Origin allowlist untuk request mutating (POST/PUT/PATCH/DELETE).
- * - Webhook Midtrans harus bypass
+ * - Webhook Midtrans bypass
  * - Kalau origin kosong -> allow (server-to-server/curl)
- * - ALLOWED_ORIGINS bisa multiple dipisah koma
+ * - ALLOWED_ORIGINS = "https://domain1,https://domain2"
  */
 function originAllowlist(req, res, next) {
   const method = req.method.toUpperCase();
   const isMutating = method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE';
 
   // Webhook MUST bypass (tanpa CSRF & tanpa origin check)
-  // Pastikan route webhook kamu benar-benar "/midtrans/notification"
   if (req.path === '/midtrans/notification') return next();
 
   if (!isMutating) return next();
 
   const origin = req.get('origin');
-  if (!origin) return next(); // allow server-to-server / curl
+  if (!origin) return next(); // allow server-to-server/curl
 
   const allow = (process.env.ALLOWED_ORIGINS || '')
     .split(',')
     .map(s => s.trim())
     .filter(Boolean);
 
-  if (allow.length === 0) return next(); // no allowlist configured -> allow
+  // If allowlist not set -> allow
+  if (allow.length === 0) return next();
 
   if (!allow.includes(origin)) {
     return res.status(403).json({ ok: false, message: 'Origin not allowed' });
