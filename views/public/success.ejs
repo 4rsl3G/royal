@@ -2,47 +2,135 @@
   <div class="bg-white border border-(var(--border)) rounded-3xl p-6 md:p-8 shadow-sm"
        data-aos="fade-up" data-aos-offset="30" data-aos-duration="800">
 
-    <!-- Header success -->
-    <div class="flex items-center gap-4">
+    <!-- Header -->
+    <div class="flex items-start gap-4">
       <div class="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
-        <i class="ri-check-double-line text-3xl"></i>
+        <i class="ri-check-line text-3xl"></i>
       </div>
+
       <div class="min-w-0">
-        <h2 class="text-2xl md:text-3xl font-black tracking-tight truncate">Pembayaran Berhasil</h2>
-        <p class="text-(var(--muted)) text-sm md:text-base">Order kamu sedang diproses sesuai antrian admin.</p>
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-black"
+             data-aos="fade-up" data-aos-delay="50">
+          <i class="ri-shield-check-line"></i>
+          Pembayaran Terkonfirmasi
+        </div>
+
+        <h2 class="mt-3 text-2xl md:text-3xl font-black tracking-tight leading-tight"
+            data-aos="fade-up" data-aos-delay="90">
+          Pembayaran Berhasil 🎉
+        </h2>
+
+        <p class="mt-2 text-(var(--muted)) text-sm md:text-base leading-relaxed"
+           data-aos="fade-up" data-aos-delay="130">
+          Order kamu sudah masuk antrian proses. Kamu bisa pantau status realtime di halaman detail order.
+        </p>
       </div>
     </div>
 
-    <!-- Order ID card -->
-    <div class="mt-6 bg-slate-50 border rounded-2xl p-4 md:p-5">
-      <div class="text-xs text-slate-500 font-bold uppercase tracking-wide">Order ID</div>
-      <div class="font-black text-xl md:text-2xl break-words"><%= orderId %></div>
-      <p class="mt-1 text-xs text-slate-500">Simpan ID ini untuk tracking jika diperlukan.</p>
+    <!-- Order box -->
+    <div class="mt-6 bg-slate-50 border rounded-2xl p-4 md:p-5"
+         data-aos="fade-up" data-aos-delay="170">
+      <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0">
+          <div class="text-xs text-slate-500 font-black uppercase tracking-wide">Order ID</div>
+          <div class="mt-1 font-black text-xl md:text-2xl break-words" id="oid"><%= orderId %></div>
+          <div class="mt-2 flex flex-wrap gap-2 text-xs text-slate-600">
+            <span class="chip"><i class="ri-pulse-line"></i> Realtime status</span>
+            <span class="chip"><i class="ri-whatsapp-line"></i> Notif WA (opsional)</span>
+            <span class="chip"><i class="ri-timer-flash-line"></i> Proses antrian</span>
+          </div>
+        </div>
+
+        <button type="button" id="copyBtn"
+                class="btn-ghost justify-center whitespace-nowrap"
+                style="padding:10px 12px; border-radius:14px;">
+          <i class="ri-file-copy-line"></i>
+          Copy
+        </button>
+      </div>
     </div>
 
-    <!-- CTA buttons -->
-    <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
-      <a href="/#/order/<%= encodeURIComponent(orderId) %>"
-         class="btn-primary shimmer w-full justify-center">
+    <!-- Timeline Steps -->
+    <div class="mt-6 grid gap-3" data-aos="fade-up" data-aos-delay="210">
+      <div class="card" style="padding:14px 14px; border-radius:18px;">
+        <div class="flex items-start gap-3">
+          <div class="badge"><i class="ri-bank-card-line"></i></div>
+          <div class="min-w-0">
+            <div class="font-black">Pembayaran</div>
+            <div class="text-sm text-slate-600">Sukses. Sistem akan menyinkronkan status order otomatis.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="padding:14px 14px; border-radius:18px;">
+        <div class="flex items-start gap-3">
+          <div class="badge"><i class="ri-loader-4-line"></i></div>
+          <div class="min-w-0">
+            <div class="font-black">Diproses Admin</div>
+            <div class="text-sm text-slate-600">Order masuk antrian, lalu diubah ke <b>processing</b>.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="padding:14px 14px; border-radius:18px;">
+        <div class="flex items-start gap-3">
+          <div class="badge"><i class="ri-checkbox-circle-line"></i></div>
+          <div class="min-w-0">
+            <div class="font-black">Selesai</div>
+            <div class="text-sm text-slate-600">Status menjadi <b>done</b> (dan WA terkirim jika diaktifkan).</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="mt-7 grid grid-cols-1 sm:grid-cols-2 gap-3" data-aos="fade-up" data-aos-delay="260">
+      <a class="btn-primary shimmer w-full justify-center"
+         href="/#/order/<%= encodeURIComponent(orderId) %>">
         <i class="ri-file-list-3-line text-lg"></i> Lihat Detail Order
       </a>
-      <a href="/#/checkout"
-         class="btn-ghost shimmer w-full justify-center">
-        <i class="ri-repeat-line text-lg"></i> Topup Lagi
+      <a class="btn-ghost shimmer w-full justify-center"
+         href="/#/checkout">
+        <i class="ri-shopping-cart-2-line text-lg"></i> Topup Lagi
       </a>
     </div>
 
     <!-- Footer note -->
-    <div class="mt-5 text-center text-xs text-slate-500">
-      Powered by Royal Dreams • Midtrans Payment Gateway
+    <div class="mt-5 text-center text-xs text-slate-500" data-aos="fade-up" data-aos-delay="300">
+      Simpan Order ID untuk tracking. Jika ada kendala, kirim Order ID ke admin.
     </div>
   </div>
 </div>
 
 <script>
-  // refresh AOS setiap kali partial dimuat
+  // AOS refresh setiap partial dimuat
   if (window.AOS) {
-    AOS.init({ once:false, mirror:true, offset:20 });
+    AOS.init({ once:false, mirror:true, offset:20, duration:700, easing:'ease-out-cubic' });
     AOS.refreshHard();
   }
+
+  // Copy Order ID
+  (function(){
+    const btn = document.getElementById('copyBtn');
+    const oid = document.getElementById('oid');
+    if (!btn || !oid) return;
+
+    btn.addEventListener('click', async () => {
+      const text = (oid.textContent || '').trim();
+      if (!text) return;
+
+      try {
+        await navigator.clipboard.writeText(text);
+        if (window.toastr) toastr.success('Order ID copied');
+      } catch (e) {
+        const t = document.createElement('textarea');
+        t.value = text;
+        document.body.appendChild(t);
+        t.select();
+        document.execCommand('copy');
+        document.body.removeChild(t);
+        if (window.toastr) toastr.success('Order ID copied');
+      }
+    });
+  })();
 </script>
