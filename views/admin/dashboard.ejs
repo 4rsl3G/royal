@@ -1,28 +1,169 @@
 <div class="fade-up">
-  <h2 class="text-2xl font-extrabold">Dashboard</h2>
-  <p class="text-slate-500 text-sm">Ringkasan order & performa (14 hari).</p>
+  <div class="card card-pad scanline">
+    <div class="card-row">
+      <div class="min-w-0">
+        <div class="pill"><i class="ri-dashboard-2-line"></i> Overview</div>
+        <div class="card-title mt-2">Dashboard</div>
+        <div class="card-sub">
+          Ringkasan order & performa (14 hari terakhir).
+        </div>
+      </div>
+
+      <div class="flex gap-2 flex-wrap">
+        <button class="btn btn-primary shimmer" id="btnRefresh">
+          <i class="ri-refresh-line"></i> Refresh
+        </button>
+        <a class="btn btn-ghost" href="<%= adminBasePath %>#/orders">
+          <i class="ri-file-list-3-line"></i> Lihat Orders
+        </a>
+      </div>
+    </div>
+  </div>
 </div>
 
-<div class="mt-5 grid md:grid-cols-2 gap-3 fade-up">
-  <div class="bg-white border rounded-2xl p-4 shadow-sm">
-    <div class="text-sm text-slate-500">Hari ini</div>
-    <div class="mt-1 text-2xl font-extrabold" id="todayCount">-</div>
-    <div class="text-slate-600 text-sm">Sum: <b id="todaySum">-</b></div>
+<div class="mt-4 grid lg:grid-cols-3 gap-4 fade-up">
+  <!-- Today -->
+  <div class="card card-pad floaty">
+    <div class="card-row">
+      <div>
+        <div class="text-xs text-slate-500 font-semibold">Hari ini</div>
+        <div class="mt-1 text-3xl font-extrabold" id="todayCount">-</div>
+      </div>
+      <span class="badge info"><i class="ri-calendar-2-line"></i> Today</span>
+    </div>
+
+    <div class="mt-3">
+      <div class="text-sm text-slate-600">Revenue</div>
+      <div class="text-xl font-extrabold" id="todaySum">-</div>
+    </div>
+
+    <div class="mt-3 text-xs text-slate-500">
+      Update realtime dari DB. Gunakan filter di menu Orders untuk detail.
+    </div>
   </div>
-  <div class="bg-white border rounded-2xl p-4 shadow-sm">
-    <div class="text-sm text-slate-500">Total</div>
-    <div class="mt-1 text-2xl font-extrabold" id="totalCount">-</div>
-    <div class="text-slate-600 text-sm">Sum: <b id="totalSum">-</b></div>
+
+  <!-- Total -->
+  <div class="card card-pad floaty">
+    <div class="card-row">
+      <div>
+        <div class="text-xs text-slate-500 font-semibold">Total</div>
+        <div class="mt-1 text-3xl font-extrabold" id="totalCount">-</div>
+      </div>
+      <span class="badge good"><i class="ri-line-chart-line"></i> All time</span>
+    </div>
+
+    <div class="mt-3">
+      <div class="text-sm text-slate-600">Revenue</div>
+      <div class="text-xl font-extrabold" id="totalSum">-</div>
+    </div>
+
+    <div class="mt-3 text-xs text-slate-500">
+      Total order count & total gross amount.
+    </div>
+  </div>
+
+  <!-- Health / Tips -->
+  <div class="card card-pad scanline">
+    <div class="card-row">
+      <div class="font-extrabold">Tips</div>
+      <span class="badge warn"><i class="ri-lightbulb-flash-line"></i> Quick</span>
+    </div>
+
+    <div class="mt-3 grid gap-2 text-sm">
+      <div class="flex items-center gap-2">
+        <span class="badge info"><i class="ri-secure-payment-line"></i></span>
+        <div class="min-w-0">
+          <div class="font-extrabold">Cek Midtrans</div>
+          <div class="text-xs text-slate-500">Pastikan client/server key sesuai mode prod/sandbox.</div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <span class="badge good"><i class="ri-whatsapp-line"></i></span>
+        <div class="min-w-0">
+          <div class="font-extrabold">WA Notif</div>
+          <div class="text-xs text-slate-500">Pairing dulu. Jika QR kosong, pakai pairing code.</div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <span class="badge warn"><i class="ri-shield-check-line"></i></span>
+        <div class="min-w-0">
+          <div class="font-extrabold">Fulfillment</div>
+          <div class="text-xs text-slate-500">Update status done/rejected untuk kirim template otomatis.</div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
-<div class="mt-4 bg-white border rounded-2xl p-4 shadow-sm fade-up">
-  <div class="font-bold">Chart 14 hari (text)</div>
-  <div class="mt-3 text-sm text-slate-600" id="chartBox">Loading…</div>
+<div class="mt-4 card card-pad fade-up">
+  <div class="card-row">
+    <div>
+      <div class="font-extrabold text-lg">Chart 14 hari</div>
+      <div class="text-sm text-slate-500">Count + sum per hari (text + progress).</div>
+    </div>
+    <span class="badge"><i class="ri-bar-chart-2-line"></i> 14d</span>
+  </div>
+
+  <div class="mt-4">
+    <div id="chartBox">
+      <div class="skeleton" style="height:22px;border-radius:16px;"></div>
+      <div class="skeleton" style="height:22px;border-radius:16px;margin-top:10px;"></div>
+      <div class="skeleton" style="height:22px;border-radius:16px;margin-top:10px;"></div>
+      <div class="skeleton" style="height:22px;border-radius:16px;margin-top:10px;"></div>
+    </div>
+  </div>
+
+  <div class="mt-3 text-xs text-slate-500">
+    Bar “█” menunjukkan intensitas order. Progress bar menunjukkan perbandingan relatif.
+  </div>
 </div>
 
 <script>
   function rupiah(n){ return 'Rp ' + (Number(n||0)).toLocaleString('id-ID'); }
+
+  function safeNum(n){
+    const x = Number(n||0);
+    return Number.isFinite(x) ? x : 0;
+  }
+
+  function renderChart(rows){
+    rows = rows || [];
+    if(!rows.length) return '<div class="text-slate-500 text-sm">No data</div>';
+
+    const maxCnt = Math.max(...rows.map(r => safeNum(r.cnt)), 1);
+
+    return rows.map(r => {
+      const cnt = safeNum(r.cnt);
+      const sum = safeNum(r.sum);
+      const pct = Math.round((cnt / maxCnt) * 100);
+
+      // keep a tiny visible bar even if cnt is 0
+      const blocks = '█'.repeat(Math.min(30, Math.max(1, Math.floor(cnt))));
+
+      return `
+        <div class="card soft" style="border-radius:18px;border:1px solid var(--line2);padding:12px 12px;margin-bottom:10px;">
+          <div class="flex items-center justify-between gap-3 flex-wrap">
+            <div class="text-xs text-slate-500 font-semibold">${String(r.d).slice(0,10)}</div>
+            <div class="badge info"><i class="ri-shopping-bag-3-line"></i> ${cnt} orders</div>
+          </div>
+
+          <div class="mt-2" style="display:flex;align-items:center;gap:10px;">
+            <div style="flex:1;">
+              <div style="height:10px;border-radius:999px;background: rgba(148,163,184,.20);overflow:hidden;border:1px solid rgba(148,163,184,.18);">
+                <div style="height:100%;width:${pct}%;background: rgba(15,23,42,.90);border-radius:999px;"></div>
+              </div>
+              <div class="mt-2 text-xs text-slate-500" style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                <span class="truncate" style="max-width:60%;">${blocks}</span>
+                <span class="font-extrabold text-slate-700">${rupiah(sum)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
 
   async function loadMetrics(){
     RD.ui.overlay(true);
@@ -34,29 +175,20 @@
       });
       if (!resp.ok) throw new Error('Failed');
 
-      $('#todayCount').text(resp.today.cnt);
-      $('#todaySum').text(rupiah(resp.today.sum));
-      $('#totalCount').text(resp.total.cnt);
-      $('#totalSum').text(rupiah(resp.total.sum));
+      $('#todayCount').text(resp.today?.cnt ?? 0);
+      $('#todaySum').text(rupiah(resp.today?.sum ?? 0));
+      $('#totalCount').text(resp.total?.cnt ?? 0);
+      $('#totalSum').text(rupiah(resp.total?.sum ?? 0));
 
-      const rows = resp.chart14 || [];
-      const lines = rows.map(r => {
-        const bar = '█'.repeat(Math.min(30, Math.max(1, Math.floor(r.cnt))));
-        return `<div class="flex items-center justify-between gap-3">
-          <div class="w-28 text-xs text-slate-500">${String(r.d).slice(0,10)}</div>
-          <div class="flex-1">${bar}</div>
-          <div class="w-16 text-right">${r.cnt}</div>
-          <div class="w-28 text-right text-slate-500 text-xs">${rupiah(r.sum)}</div>
-        </div>`;
-      }).join('');
-
-      $('#chartBox').html(lines || '<div class="text-slate-500">No data</div>');
+      $('#chartBox').html(renderChart(resp.chart14 || []));
     } catch(e) {
       toastr.error(e.message || 'Failed load metrics');
+      $('#chartBox').html('<div class="text-rose-600 text-sm">Gagal memuat chart.</div>');
     } finally {
       RD.ui.overlay(false);
     }
   }
 
+  $('#btnRefresh').on('click', loadMetrics);
   loadMetrics();
 </script>
