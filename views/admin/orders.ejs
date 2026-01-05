@@ -1,6 +1,4 @@
-<div class="orders-page fade-up">
-
-  <!-- FILTER CARD (tetap) -->
+<div class="fade-up">
   <div class="card card-pad scanline">
     <div class="card-row">
       <div class="min-w-0">
@@ -58,96 +56,83 @@
       </div>
     </div>
   </div>
+</div>
 
-  <!-- LIST CARD (yang scroll cuma ini) -->
-  <div class="card card-pad orders-list-card" id="tableWrap">
-    <div class="card-row">
-      <div class="font-extrabold text-lg">Orders</div>
-      <div class="pill"><i class="ri-database-2-line"></i> <span id="countBox">0</span> rows</div>
-    </div>
-
-    <!-- SCROLL AREA -->
-    <div class="orders-list-scroll mt-4">
-      <table class="w-full text-sm">
-        <thead>
-          <tr class="text-left text-slate-500">
-            <th class="py-2 pr-3">Order</th>
-            <th class="py-2 pr-3">Produk</th>
-            <th class="py-2 pr-3">Customer</th>
-            <th class="py-2 pr-3">Amount</th>
-            <th class="py-2 pr-3">Pay</th>
-            <th class="py-2 pr-3">Fulfill</th>
-            <th class="py-2 pr-3 text-right">Action</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
-    </div>
+<!-- TABLE (DataTables) -->
+<div class="mt-4 card card-pad fade-up">
+  <div class="card-row">
+    <div class="font-extrabold text-lg">Orders Table</div>
+    <div class="pill"><i class="ri-database-2-line"></i> <span id="countBox">0</span> items</div>
   </div>
 
-  <!-- MOBILE CARDS (juga scroll hanya di card ini) -->
-  <div class="card card-pad orders-list-card" id="cardsWrap" style="display:none;">
-    <div class="card-row">
-      <div class="font-extrabold text-lg">Orders</div>
-      <div class="pill"><i class="ri-database-2-line"></i> <span id="countBox2">0</span> items</div>
-    </div>
-
-    <div class="orders-list-scroll mt-4" id="cardsBox"></div>
+  <div class="mt-4" style="overflow:auto; -webkit-overflow-scrolling: touch;">
+    <table id="ordersTable" class="display nowrap stripe hover" style="width:100%">
+      <thead>
+        <tr>
+          <th>Order</th>
+          <th>Produk</th>
+          <th>Customer</th>
+          <th>Amount</th>
+          <th>Pay</th>
+          <th>Fulfill</th>
+          <th class="text-right">Action</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
   </div>
 
+  <div class="mt-3 help">
+    Showing <b>5</b> per page. Gunakan pagination di bawah tabel.
+  </div>
 </div>
 
 <!-- MODAL -->
 <div id="modal" class="hidden">
   <div class="rd-modal-wrap">
-    <div class="rd-modal-card">
-      <div class="card card-pad" style="border:none;box-shadow:none;background:transparent;">
-        <div class="card-row">
-          <div>
-            <div class="font-extrabold text-lg">Update Fulfill</div>
-            <div class="text-sm text-slate-500">Update status + admin note (dipakai template WA).</div>
-          </div>
-          <button class="btn btn-ghost" id="closeModal"><i class="ri-close-line"></i></button>
+    <div class="rd-modal-card card card-pad" style="width:100%;max-width:720px;">
+      <div class="card-row">
+        <div class="min-w-0">
+          <div class="font-extrabold text-lg">Update Fulfill</div>
+          <div class="text-sm text-slate-500">Update status + admin note (dipakai template WA).</div>
+        </div>
+        <button class="btn btn-ghost" id="closeModal"><i class="ri-close-line"></i></button>
+      </div>
+
+      <div class="mt-4 grid md:grid-cols-2 gap-3">
+        <div class="card soft card-pad" style="border-radius:18px;border:1px solid var(--line2);">
+          <div class="text-xs text-slate-500">Order ID</div>
+          <div class="font-extrabold mt-1 break-anywhere" id="mOrderId">-</div>
+
+          <div class="text-xs text-slate-500 mt-3">Pay</div>
+          <div class="mt-1" id="mPayBadge">-</div>
+
+          <div class="text-xs text-slate-500 mt-3">Gross</div>
+          <div class="font-extrabold mt-1" id="mGross">-</div>
         </div>
 
-        <!-- scrollable body -->
-        <div class="rd-modal-body">
-          <div class="grid md:grid-cols-2 gap-3">
-            <div class="card soft card-pad" style="border-radius:18px;border:1px solid var(--line2);">
-              <div class="text-xs text-slate-500">Order ID</div>
-              <div class="font-extrabold mt-1 break-anywhere" id="mOrderId">-</div>
+        <div class="card soft card-pad" style="border-radius:18px;border:1px solid var(--line2);">
+          <div class="label">Fulfill Status</div>
+          <select id="mFulfill" class="select">
+            <option value="waiting">waiting</option>
+            <option value="processing">processing</option>
+            <option value="done">done</option>
+            <option value="rejected">rejected</option>
+          </select>
 
-              <div class="text-xs text-slate-500 mt-3">Pay</div>
-              <div class="mt-1" id="mPayBadge">-</div>
+          <div class="label mt-3">Admin Note</div>
+          <textarea id="mNote" class="textarea" rows="5" placeholder="Catatan untuk customer (dipakai di template WA)"></textarea>
 
-              <div class="text-xs text-slate-500 mt-3">Gross</div>
-              <div class="font-extrabold mt-1" id="mGross">-</div>
-            </div>
-
-            <div class="card soft card-pad" style="border-radius:18px;border:1px solid var(--line2);">
-              <div class="label">Fulfill Status</div>
-              <select id="mFulfill" class="select">
-                <option value="waiting">waiting</option>
-                <option value="processing">processing</option>
-                <option value="done">done</option>
-                <option value="rejected">rejected</option>
-              </select>
-
-              <div class="label mt-3">Admin Note</div>
-              <textarea id="mNote" class="textarea" rows="7" placeholder="Catatan untuk customer (dipakai di template WA)"></textarea>
-
-              <div class="mt-3">
-                <button class="btn btn-primary shimmer btn-block" id="saveBtn">
-                  <i class="ri-save-3-line"></i> Simpan
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div class="mt-3 help">
-            Saran: set “processing” saat mulai pengerjaan. “done”/“rejected” akan memicu template WA (jika enabled + connected).
+          <div class="mt-3">
+            <button class="btn btn-primary shimmer btn-block" id="saveBtn">
+              <i class="ri-save-3-line"></i> Simpan
+            </button>
           </div>
         </div>
+      </div>
+
+      <div class="mt-3 help">
+        Saran: set “processing” saat mulai pengerjaan. “done”/“rejected” akan memicu template WA (jika enabled + connected).
       </div>
     </div>
   </div>
@@ -182,129 +167,115 @@
     return `<span class="badge">${escapeHtml(st||'-')}</span>`;
   }
 
+  let DT = null;
   let CURRENT = null;
-  let DATA = [];
+  let CURRENT_ROW = null;
 
-  function rowHtml(o){
-    const note = escapeHtml(o.admin_note || '');
-    return `
-      <tr class="border-t">
-        <td class="py-2 pr-3">
-          <div class="font-extrabold break-anywhere">${escapeHtml(o.order_id)}</div>
-          <div class="text-xs text-slate-500">${escapeHtml(String(o.created_at).replace('T',' ').slice(0,19))}</div>
-        </td>
-        <td class="py-2 pr-3">
-          <div class="font-extrabold">${escapeHtml(o.product_name)}</div>
-          <div class="text-xs text-slate-500">qty: ${Number(o.qty||0)} • unit: ${rupiah(o.unit_price||0)}</div>
-        </td>
-        <td class="py-2 pr-3">
-          <div class="font-extrabold">${escapeHtml(o.game_id)}</div>
-          <div class="text-xs text-slate-500">${escapeHtml(o.nickname || '-')} • ${escapeHtml(o.whatsapp || '-')}</div>
-        </td>
-        <td class="py-2 pr-3">
-          <div class="font-extrabold">${rupiah(o.gross_amount)}</div>
-        </td>
-        <td class="py-2 pr-3">${payBadge(o.pay_status)}</td>
-        <td class="py-2 pr-3">${fulfillBadge(o.fulfill_status)}</td>
-        <td class="py-2 pr-3 text-right">
-          <button class="btn btn-sm js-edit"
-            data-oid="${escapeHtml(o.order_id)}"
-            data-pay="${escapeHtml(o.pay_status)}"
-            data-ful="${escapeHtml(o.fulfill_status)}"
-            data-note="${note}"
-            data-gross="${escapeHtml(String(o.gross_amount||0))}">
-            <i class="ri-pencil-line"></i> Edit
-          </button>
-        </td>
-      </tr>
-    `;
-  }
+  function openModalFromRow(row){
+    CURRENT_ROW = row;
+    CURRENT = row.order_id;
 
-  function cardHtml(o){
-    const note = escapeHtml(o.admin_note || '');
-    return `
-      <div class="card soft" style="border-radius:22px;border:1px solid var(--line2);padding:12px;margin-bottom:12px;">
-        <div class="flex items-start justify-between gap-3">
-          <div class="min-w-0">
-            <div class="font-extrabold break-anywhere">${escapeHtml(o.order_id)}</div>
-            <div class="text-xs text-slate-500 mt-1">${escapeHtml(String(o.created_at).replace('T',' ').slice(0,19))}</div>
-          </div>
-          <button class="btn btn-sm js-edit"
-            data-oid="${escapeHtml(o.order_id)}"
-            data-pay="${escapeHtml(o.pay_status)}"
-            data-ful="${escapeHtml(o.fulfill_status)}"
-            data-note="${note}"
-            data-gross="${escapeHtml(String(o.gross_amount||0))}">
-            <i class="ri-pencil-line"></i>
-          </button>
-        </div>
-
-        <div class="mt-3">
-          <div class="text-sm font-extrabold">${escapeHtml(o.product_name)}</div>
-          <div class="text-xs text-slate-500">qty ${Number(o.qty||0)} • unit ${rupiah(o.unit_price||0)} • total <b>${rupiah(o.gross_amount||0)}</b></div>
-        </div>
-
-        <div class="mt-3 grid grid-cols-2 gap-2">
-          <div class="card soft" style="border-radius:18px;border:1px solid var(--line2);padding:10px;">
-            <div class="text-xs text-slate-500">Customer</div>
-            <div class="font-extrabold truncate">${escapeHtml(o.game_id)}</div>
-            <div class="text-xs text-slate-500 truncate">${escapeHtml(o.nickname || '-')} • ${escapeHtml(o.whatsapp || '-')}</div>
-          </div>
-          <div class="card soft" style="border-radius:18px;border:1px solid var(--line2);padding:10px;">
-            <div class="text-xs text-slate-500">Status</div>
-            <div class="mt-1">${payBadge(o.pay_status)}</div>
-            <div class="mt-2">${fulfillBadge(o.fulfill_status)}</div>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  /* ===== Modal WAH open/close ===== */
-  function openModalFromData(data){
-    CURRENT = data.oid;
     $('#mOrderId').text(CURRENT);
-    $('#mFulfill').val(data.ful || 'waiting');
-    $('#mNote').val(data.note || '');
-    $('#mPayBadge').html(payBadge(data.pay || '-'));
-    $('#mGross').text(rupiah(data.gross || 0));
-
-    const $m = $('#modal');
+    $('#mFulfill').val(row.fulfill_status || 'waiting');
+    $('#mNote').val(row.admin_note || '');
+    $('#mPayBadge').html(payBadge(row.pay_status || '-'));
+    $('#mGross').text(rupiah(row.gross_amount || 0));
 
     $('body').addClass('modal-open');
-    $m.removeClass('hidden is-closing').addClass('is-open');
-
-    // reset scroll inside modal
-    $m.find('.rd-modal-wrap').scrollTop(0);
-    $m.find('.rd-modal-body').scrollTop(0);
+    $('#modal').removeClass('hidden');
   }
 
   function closeModal(){
-    const $m = $('#modal');
-    if ($m.hasClass('hidden')) return;
-
-    $m.removeClass('is-open').addClass('is-closing');
-
-    setTimeout(() => {
-      $m.addClass('hidden').removeClass('is-closing');
-      $('body').removeClass('modal-open');
-      CURRENT = null;
-    }, 220);
+    // trigger anim close via CSS (#modal.hidden => opacity 0)
+    $('#modal').addClass('hidden');
+    $('body').removeClass('modal-open');
+    CURRENT = null;
+    CURRENT_ROW = null;
   }
 
-  function renderResponsive(data){
-    const isMobile = window.matchMedia && window.matchMedia('(max-width: 880px)').matches;
-    if(isMobile){
-      $('#tableWrap').hide();
-      $('#cardsWrap').show();
-      $('#countBox2').text(data.length);
-      $('#cardsBox').html(data.map(cardHtml).join('') || `<div class="text-slate-500 text-sm">No data</div>`);
-    } else {
-      $('#cardsWrap').hide();
-      $('#tableWrap').show();
-      $('#countBox').text(data.length);
-      $('#tbody').html(data.map(rowHtml).join('') || `<tr><td class="py-3 text-slate-500" colspan="7">No data</td></tr>`);
-    }
+  function buildDataTable(){
+    if (DT) { DT.destroy(); $('#ordersTable tbody').empty(); }
+
+    DT = $('#ordersTable').DataTable({
+      responsive: true,
+      autoWidth: false,
+      pageLength: 5,
+      lengthChange: false,
+      processing: true,
+      deferRender: true,
+      order: [[0, 'desc']],
+      language: {
+        info: "Menampilkan _START_ - _END_ dari _TOTAL_ orders",
+        infoEmpty: "Tidak ada data",
+        paginate: { previous: "‹", next: "›" },
+        emptyTable: "Tidak ada data",
+        zeroRecords: "Tidak ada data cocok"
+      },
+      columns: [
+        {
+          data: null,
+          render: function(_, __, row){
+            const t = escapeHtml(String(row.created_at||'').replace('T',' ').slice(0,19));
+            return `
+              <div class="font-extrabold break-anywhere">${escapeHtml(row.order_id)}</div>
+              <div class="text-xs text-slate-500 mt-1">${t}</div>
+            `;
+          }
+        },
+        {
+          data: null,
+          render: function(_, __, row){
+            return `
+              <div class="font-extrabold">${escapeHtml(row.product_name || '-')}</div>
+              <div class="text-xs text-slate-500 mt-1">qty: ${Number(row.qty||0)} • unit: ${rupiah(row.unit_price||0)}</div>
+            `;
+          }
+        },
+        {
+          data: null,
+          render: function(_, __, row){
+            return `
+              <div class="font-extrabold">${escapeHtml(row.game_id || '-')}</div>
+              <div class="text-xs text-slate-500 mt-1">${escapeHtml(row.nickname || '-')} • ${escapeHtml(row.whatsapp || '-')}</div>
+            `;
+          }
+        },
+        {
+          data: "gross_amount",
+          render: function(v){
+            return `<div class="font-extrabold">${rupiah(v||0)}</div>`;
+          }
+        },
+        {
+          data: "pay_status",
+          orderable: false,
+          render: function(v){ return payBadge(v); }
+        },
+        {
+          data: "fulfill_status",
+          orderable: false,
+          render: function(v){ return fulfillBadge(v); }
+        },
+        {
+          data: null,
+          orderable: false,
+          className: "dt-body-right",
+          render: function(_, __, row){
+            const note = escapeHtml(row.admin_note || '');
+            return `
+              <button class="btn btn-sm js-edit"
+                data-oid="${escapeHtml(row.order_id)}"
+                data-pay="${escapeHtml(row.pay_status)}"
+                data-ful="${escapeHtml(row.fulfill_status)}"
+                data-note="${note}"
+                data-gross="${escapeHtml(String(row.gross_amount||0))}">
+                <i class="ri-pencil-line"></i> Edit
+              </button>
+            `;
+          }
+        }
+      ]
+    });
   }
 
   async function load(){
@@ -314,27 +285,37 @@
       fulfill_status: $('#fulfill_status').val()
     });
 
-    $('#cardsBox').html(RD.ui.skeletonBlocks ? RD.ui.skeletonBlocks(6) : '');
-    if (RD.ui.skeletonTableRows) RD.ui.skeletonTableRows('#tbody', 7, 7);
-
     try {
+      RD.ui.overlay(true);
+
       const resp = await $.ajax({
         method:'GET',
         url: window.__ADMIN_BASE + '/api/orders?' + qs,
         headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
       });
-      if (!resp.ok) throw new Error('Failed');
 
-      DATA = resp.data || [];
-      renderResponsive(DATA);
+      if (!resp.ok) throw new Error(resp.message || 'Failed');
+
+      const data = resp.data || [];
+      $('#countBox').text(data.length);
+
+      if (!DT) buildDataTable();
+
+      DT.clear();
+      DT.rows.add(data);
+      DT.draw();
 
     } catch(e) {
       toastr.error(e.message || 'Failed load orders');
-      $('#tbody').html(`<tr><td class="py-3 text-rose-600" colspan="7">Error</td></tr>`);
-      $('#cardsBox').html(`<div class="text-rose-600 text-sm">Error</div>`);
+      if (DT){
+        DT.clear().draw();
+      }
+    } finally {
+      RD.ui.overlay(false);
     }
   }
 
+  // EVENTS
   $('#btnRefresh').on('click', load);
 
   $('#btnQuickPending').on('click', function(){
@@ -349,26 +330,19 @@
     load();
   });
 
-  $('#q').on('keyup', RD.util.debounce(load, 400));
+  // search input: pakai debounce dan reload API (biar hasil akurat)
+  $('#q').on('keyup', RD.util.debounce(load, 350));
   $('#pay_status, #fulfill_status').on('change', load);
 
-  $(document).off('click', '.js-edit').on('click', '.js-edit', function(){
-    const data = {
-      oid: String($(this).data('oid') || ''),
-      pay: String($(this).data('pay') || ''),
-      ful: String($(this).data('ful') || ''),
-      note: String($(this).data('note') || ''),
-      gross: String($(this).data('gross') || '0')
-    };
-    openModalFromData(data);
+  // edit click: DataTables safe (child row fix)
+  $(document).off('click', '#ordersTable .js-edit').on('click', '#ordersTable .js-edit', function(){
+    const oid = String($(this).data('oid') || '');
+    const row = DT.rows().data().toArray().find(x => String(x.order_id) === oid);
+    if (row) openModalFromRow(row);
   });
 
   $('#closeModal').on('click', closeModal);
-
-  // klik backdrop (bukan card) => close
-  $('#modal').on('click', (e) => {
-    if ($(e.target).closest('.rd-modal-card').length === 0) closeModal();
-  });
+  $('#modal').on('click', (e) => { if (e.target.id==='modal') closeModal(); });
 
   $(document).on('keydown', function(e){
     if (e.key === 'Escape' && !$('#modal').hasClass('hidden')) closeModal();
@@ -398,11 +372,16 @@
     }
   });
 
-  const onResize = RD.util.debounce(function(){
-    renderResponsive(DATA || []);
-  }, 120);
-  window.addEventListener('resize', onResize);
-  RD.router.onLeave(() => window.removeEventListener('resize', onResize));
+  // cleanup when leaving route
+  RD.router.onLeave(() => {
+    try{
+      if (DT){ DT.destroy(); DT = null; }
+    }catch(_){}
+    $(document).off('click', '#ordersTable .js-edit');
+    $(document).off('keydown');
+  });
 
+  // boot
+  buildDataTable();
   load();
 </script>
