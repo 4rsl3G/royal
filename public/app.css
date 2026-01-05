@@ -281,6 +281,7 @@ body{
   text-decoration:none;
   box-shadow: 0 18px 50px rgba(2,6,23,.20);
   transition: transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+  max-width: 100%;
 }
 .btn-primary:hover{ transform: translateY(-1px); box-shadow: 0 26px 80px rgba(2,6,23,.28); }
 .btn-primary:active{ transform: translateY(1px) scale(.99); }
@@ -298,6 +299,7 @@ body{
   text-decoration:none;
   box-shadow: 0 14px 40px rgba(2,6,23,.06);
   transition: transform .15s ease, background .15s ease, box-shadow .15s ease;
+  max-width: 100%;
 }
 .btn-ghost:hover{ transform: translateY(-1px); background:#fff; box-shadow: 0 18px 55px rgba(2,6,23,.09); }
 
@@ -325,6 +327,7 @@ body{
   padding: 16px;
   box-shadow: 0 18px 60px rgba(2,6,23,.06);
   transition: transform .15s ease, box-shadow .15s ease;
+  max-width: 100%;
 }
 .card:hover{
   transform: translateY(-2px);
@@ -336,6 +339,7 @@ body{
   border: 1px solid rgba(226,232,240,.9);
   box-shadow: 0 18px 60px rgba(2,6,23,.10);
   backdrop-filter: blur(10px);
+  max-width: 100%;
 }
 .badge{
   width: 34px; height: 34px;
@@ -354,6 +358,14 @@ body{
   font-size:.8rem;
   color:#334155;
   font-weight: 900;
+
+  /* FIX overflow mobile */
+  flex-wrap: wrap;
+  white-space: normal;
+  max-width: 100%;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* hero wrap */
@@ -366,7 +378,18 @@ body{
               radial-gradient(900px 500px at 80% 10%, rgba(2,132,199,.10), transparent 55%),
               linear-gradient(180deg, #ffffff, #fbfdff);
   box-shadow: var(--shadow);
+  max-width: 100%;
 }
+
+/* FIX: flex items inside hero must be allowed to shrink */
+.hero-wrap * { min-width: 0; }
+.hero-wrap h1,
+.hero-wrap p{
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .blob{
   position:absolute;
   width: 360px;
@@ -423,4 +446,10 @@ body{
 @keyframes sk{
   0%{ background-position: 0% 0; }
   100%{ background-position: 100% 0; }
+}
+
+/* ===== Mobile tweaks ===== */
+@media (max-width: 420px){
+  .hero-wrap{ border-radius: 22px; }
+  .hero-wrap.p-5{ padding: 16px !important; } /* override tailwind padding class */
 }
