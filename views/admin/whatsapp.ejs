@@ -1,51 +1,164 @@
 <div class="fade-up">
-  <h2 class="text-2xl font-extrabold">WhatsApp</h2>
-  <p class="text-slate-500 text-sm">Start socket, pairing QR, status, dan test message.</p>
+  <div class="card card-pad scanline">
+    <div class="card-row">
+      <div class="min-w-0">
+        <div class="pill"><i class="ri-whatsapp-line"></i> WhatsApp Gateway</div>
+        <div class="card-title mt-2">WhatsApp</div>
+        <div class="card-sub">
+          Start socket, pairing (QR / pairing code), status realtime, dan test message.
+        </div>
+      </div>
+      <div class="flex gap-2 flex-wrap">
+        <button class="btn btn-primary shimmer" id="startBtn">
+          <i class="ri-play-circle-line"></i> Start
+        </button>
+        <button class="btn btn-ghost" id="refreshBtn">
+          <i class="ri-refresh-line"></i> Refresh
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="mt-4 grid lg:grid-cols-2 gap-4">
-  <div class="bg-white border rounded-2xl p-4 shadow-sm fade-up">
-    <div class="flex items-center justify-between">
-      <div class="font-bold">Connection</div>
-      <button class="btn-primary" id="startBtn"><i class="ri-play-circle-line"></i> Start</button>
+  <!-- Connection / Pairing -->
+  <div class="card card-pad fade-up">
+    <div class="card-row">
+      <div>
+        <div class="font-extrabold text-lg">Connection</div>
+        <div class="text-sm text-slate-500">Gunakan pairing code (recommended) atau QR jika tersedia.</div>
+      </div>
+      <span class="badge info" id="badgeSt"><i class="ri-pulse-line"></i> -</span>
     </div>
 
-    <div class="mt-3">
-      <div class="text-xs text-slate-500">Status</div>
-      <div class="font-extrabold text-lg" id="st">-</div>
-      <div class="text-xs text-slate-500 mt-1" id="err"></div>
+    <div class="mt-4 form-grid">
+      <div class="col-12">
+        <div class="label">Nomor untuk Pairing Code (format 62xxxx)</div>
+        <input class="input" id="pairPhone" placeholder="62812xxxxxxx (untuk pairing code)" autocomplete="off" />
+        <div class="help">
+          Jika QR tidak muncul, ini normal. Baileys modern sering pakai <b>pairing code</b>.
+          Buka WhatsApp → <b>Perangkat tertaut</b> → <b>Tautkan perangkat</b> → pilih opsi kode/nomor, lalu masukkan kode.
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="label">Status</div>
+        <div class="card soft card-pad" style="border-radius:18px; border:1px solid var(--line2);">
+          <div class="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <div class="text-xs text-slate-500">Connection State</div>
+              <div class="font-extrabold text-xl" id="st">-</div>
+              <div class="text-xs text-rose-600 mt-1" id="err"></div>
+            </div>
+            <div class="text-xs text-slate-500">
+              Auth: <b>./wa_auth</b>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div class="mt-4" id="qrBox" style="display:none;">
-      <div class="text-sm font-bold">Scan QR</div>
-      <img id="qrImg" class="mt-2 w-64 h-64 bg-slate-50 border rounded-2xl p-2" />
-      <div class="text-xs text-slate-500 mt-2">Buka WhatsApp → Linked devices → Link a device.</div>
+    <!-- Pairing Code Box -->
+    <div class="mt-4 hidden" id="pairBox">
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <div class="font-extrabold">Pairing Code</div>
+          <div class="text-xs text-slate-500">Masukkan kode ini di WhatsApp HP.</div>
+        </div>
+        <button class="btn btn-sm" id="copyCodeBtn">
+          <i class="ri-file-copy-line"></i> Copy
+        </button>
+      </div>
+
+      <div class="mt-3 flex items-center gap-3 flex-wrap">
+        <div class="code-box floaty" id="pairCode">-</div>
+        <div class="text-xs text-slate-500 leading-relaxed">
+          WhatsApp HP → <b>Perangkat tertaut</b> → <b>Tautkan perangkat</b> → opsi kode/nomor → masukkan kode.
+        </div>
+      </div>
+    </div>
+
+    <!-- QR Box -->
+    <div class="mt-4 hidden" id="qrBox">
+      <div class="font-extrabold">Scan QR</div>
+      <div class="text-xs text-slate-500">Buka WhatsApp → Linked devices → Link a device.</div>
+      <img id="qrImg" class="mt-3 qr-img" />
     </div>
 
     <div class="mt-4 text-xs text-slate-500">
-      Catatan: Auto reconnect jika disconnect bukan loggedOut. Auth state disimpan di folder <b>./wa_auth</b>.
+      Catatan: Auto reconnect jika disconnect bukan <b>loggedOut</b>. Jika kamu mengganti server, hapus folder <b>wa_auth</b> untuk pairing ulang.
     </div>
   </div>
 
-  <div class="bg-white border rounded-2xl p-4 shadow-sm fade-up">
-    <div class="font-bold">Test Send</div>
-    <div class="mt-3 grid gap-3">
+  <!-- Test Send -->
+  <div class="card card-pad fade-up">
+    <div class="card-row">
       <div>
-        <label class="label">To (62xxxx)</label>
-        <input class="input" id="to" placeholder="62812xxxxxxx" />
+        <div class="font-extrabold text-lg">Test Send</div>
+        <div class="text-sm text-slate-500">Kirim pesan percobaan saat status <b>connected</b>.</div>
       </div>
-      <div>
-        <label class="label">Message</label>
-        <textarea class="input" id="msg" rows="4" placeholder="Hello dari Royal Dreams"></textarea>
+      <span class="badge good" id="badgeConn" style="display:none;"><i class="ri-check-line"></i> Connected</span>
+    </div>
+
+    <div class="mt-4 form-grid">
+      <div class="col-12">
+        <div class="label">To (62xxxx)</div>
+        <input class="input" id="to" placeholder="62812xxxxxxx" autocomplete="off" />
       </div>
-      <button class="btn-primary justify-center" id="testBtn">
-        <i class="ri-send-plane-2-line"></i> Send
-      </button>
+      <div class="col-12">
+        <div class="label">Message</div>
+        <textarea class="textarea" id="msg" rows="5" placeholder="Hello dari Royal Dreams"></textarea>
+      </div>
+      <div class="col-12 flex gap-2 flex-wrap">
+        <button class="btn btn-primary btn-block shimmer" id="testBtn">
+          <i class="ri-send-plane-2-line"></i> Send
+        </button>
+      </div>
+      <div class="col-12">
+        <div class="help">
+          Pastikan nomor tujuan format <b>62</b> (contoh: 62812xxxx). Jika gagal, cek status koneksi & pairing.
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
+  // Helper for status badge
+  function setBadge(st){
+    const $b = $('#badgeSt');
+    $b.removeClass('good warn bad info');
+    if(st === 'connected'){
+      $b.addClass('good').html('<i class="ri-check-line"></i> connected');
+    } else if(st === 'need_pair'){
+      $b.addClass('warn').html('<i class="ri-qr-code-line"></i> need_pair');
+    } else if(st === 'connecting'){
+      $b.addClass('info').html('<i class="ri-loader-4-line"></i> connecting');
+    } else {
+      $b.addClass('bad').html('<i class="ri-close-circle-line"></i> disconnected');
+    }
+  }
+
+  function showPairing(resp){
+    // Pairing Code
+    if(resp.status === 'need_pair' && resp.pairingCode){
+      $('#pairBox').removeClass('hidden');
+      $('#pairCode').text(resp.pairingCode);
+    } else {
+      $('#pairBox').addClass('hidden');
+      $('#pairCode').text('-');
+    }
+
+    // QR
+    if(resp.status === 'need_pair' && resp.qr){
+      $('#qrBox').removeClass('hidden');
+      $('#qrImg').attr('src', resp.qr);
+    } else {
+      $('#qrBox').addClass('hidden');
+      $('#qrImg').attr('src', '');
+    }
+  }
+
   async function refresh(){
     try {
       const resp = await $.ajax({
@@ -53,29 +166,52 @@
         url: window.__ADMIN_BASE + '/api/whatsapp/status',
         headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
       });
-      if (!resp.ok) return;
-      $('#st').text(resp.status);
+      if (!resp || !resp.ok) return;
+
+      $('#st').text(resp.status || '-');
       $('#err').text(resp.error || '');
-      if (resp.status === 'need_pair' && resp.qr) {
-        $('#qrBox').show();
-        $('#qrImg').attr('src', resp.qr);
+      setBadge(resp.status || 'disconnected');
+
+      if(resp.status === 'connected'){
+        $('#badgeConn').show();
       } else {
-        $('#qrBox').hide();
+        $('#badgeConn').hide();
       }
+
+      showPairing(resp);
     } catch(e) {}
   }
+
+  $('#refreshBtn').on('click', refresh);
+
+  $('#copyCodeBtn').on('click', async function(){
+    const code = ($('#pairCode').text() || '').trim();
+    if(!code || code === '-') return toastr.warning('Kode belum ada');
+    try{
+      await navigator.clipboard.writeText(code);
+      toastr.success('Pairing code copied');
+    }catch(e){
+      toastr.info('Copy manual: ' + code);
+    }
+  });
 
   $('#startBtn').on('click', async function(){
     RD.ui.overlay(true);
     try {
+      const phoneNumber = ($('#pairPhone').val() || '').trim();
       const resp = await $.ajax({
         method:'POST',
         url: window.__ADMIN_BASE + '/api/whatsapp/start',
+        data: { phoneNumber },
         headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
       });
       if (!resp.ok) throw new Error(resp.message || 'Failed');
+
       toastr.success('WA started');
-      refresh();
+      showPairing(resp);
+      $('#st').text(resp.status || '-');
+      $('#err').text(resp.error || '');
+      setBadge(resp.status || 'connecting');
     } catch(e) {
       toastr.error(e.responseJSON?.message || e.message || 'Failed');
     } finally {
