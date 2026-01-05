@@ -1,7 +1,6 @@
-// middleware/security.js (FINAL)
-// Helmet + CSP (CDN + AOS + Midtrans Snap) + rate limit + origin allowlist + body size guard
-// Dipakai di server.js:
-// const { buildHelmet, publicLimiter, loginLimiter, bodyLimit, originAllowlist } = require('./middleware/security');
+// middleware/security.js (UPDATED)
+// Helmet + CSP (Tailwind + jQuery + Toastr + DataTables + RemixIcon + Google Fonts + AOS + Midtrans Snap)
+// + rate limit + origin allowlist + body size guard
 
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -18,19 +17,21 @@ const bodyLimit = (req, res, next) => {
 function buildHelmet() {
   const isProd = process.env.NODE_ENV === 'production';
 
-  // CSP: allow Tailwind CDN, jQuery, Toastr, RemixIcon, Google Fonts Inter, AOS (unpkg), Midtrans Snap
-  // IMPORTANT NOTES:
-  // - Tailwind CDN membutuhkan unsafe-eval (dan kadang unsafe-inline). Ini tradeoff.
-  //   Kalau mau paling ketat, build tailwind sendiri (bukan CDN).
-  // - Snap memakai iframe: frameSrc harus allow app.midtrans.com + sandbox.
-  // - AOS diambil dari unpkg.com: harus allow di scriptSrc & styleSrc.
+  /**
+   * CSP notes:
+   * - Tailwind CDN butuh 'unsafe-eval' (dan kadang inline) => tradeoff.
+   * - DataTables (cdnjs) butuh script + style dari cdnjs.cloudflare.com.
+   * - Toastr (cdnjs) sudah masuk.
+   * - Midtrans Snap butuh frame + script dari app.midtrans.com / sandbox.
+   * - Admin SPA load partial via AJAX dari origin sendiri => connectSrc 'self' cukup.
+   */
   const directives = {
     defaultSrc: ["'self'"],
     baseUri: ["'self'"],
     objectSrc: ["'none'"],
-    frameAncestors: ["'none'"],
 
-    // Midtrans Snap uses iframe
+    // allow embed only from midtrans (snap iframe)
+    frameAncestors: ["'none'"],
     frameSrc: [
       "'self'",
       "https://app.sandbox.midtrans.com",
@@ -39,11 +40,12 @@ function buildHelmet() {
 
     scriptSrc: [
       "'self'",
-      // Needed for Tailwind CDN + some CDNs; tradeoff for security.
+
+      // Tailwind CDN requires these (tradeoff)
       "'unsafe-inline'",
       "'unsafe-eval'",
 
-      // CDNs
+      // CDNs (include DataTables from Cloudflare/cdnjs)
       "https://cdn.tailwindcss.com",
       "https://code.jquery.com",
       "https://cdnjs.cloudflare.com",
@@ -58,6 +60,8 @@ function buildHelmet() {
     styleSrc: [
       "'self'",
       "'unsafe-inline'",
+
+      // Google fonts + DataTables CSS from cdnjs
       "https://fonts.googleapis.com",
       "https://cdnjs.cloudflare.com",
       "https://cdn.jsdelivr.net",
@@ -67,7 +71,8 @@ function buildHelmet() {
     fontSrc: [
       "'self'",
       "https://fonts.gstatic.com",
-      "https://cdn.jsdelivr.net"
+      "https://cdn.jsdelivr.net",
+      "https://cdnjs.cloudflare.com"
     ],
 
     imgSrc: [
@@ -80,24 +85,34 @@ function buildHelmet() {
     connectSrc: [
       "'self'",
 
-      // Midtrans API endpoints (server to midtrans; browser biasanya tidak langsung call,
-      // tapi Snap/JS bisa butuh connect)
+      // Midtrans (snap can use it)
       "https://api.sandbox.midtrans.com",
       "https://api.midtrans.com",
-
-      // Snap endpoints
       "https://app.sandbox.midtrans.com",
-      "https://app.midtrans.com"
-    ]
+      "https://app.midtrans.com",
+
+      // (Optional) allow CDN fetches if browser treats some loads as fetch in strict envs
+      "https://cdnjs.cloudflare.com",
+      "https://code.jquery.com",
+      "https://cdn.jsdelivr.net",
+      "https://unpkg.com"
+    ],
+
+    // allow forms post back to self + midtrans (optional)
+    formAction: ["'self'", "https://app.sandbox.midtrans.com", "https://app.midtrans.com"],
+
+    // allow workers if ever used by libs (safe)
+    workerSrc: ["'self'", "blob:"],
+
+    // allow manifest if any
+    manifestSrc: ["'self'"]
   };
 
-  // If production, enforce https
   if (isProd) {
     directives.upgradeInsecureRequests = [];
   }
 
   return helmet({
-    // CSP
     contentSecurityPolicy: {
       useDefaults: false,
       directives
@@ -106,10 +121,9 @@ function buildHelmet() {
     // Snap iframe can break if COEP enabled
     crossOriginEmbedderPolicy: false,
 
-    // Sensible defaults
     referrerPolicy: { policy: 'no-referrer' },
 
-    // Use frameguard too (redundant with frameAncestors, but ok)
+    // keep deny iframe
     frameguard: { action: 'deny' }
   });
 }
