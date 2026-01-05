@@ -1,99 +1,159 @@
-window.RD = window.RD || {};
+(function () {
+  const RD = window.RD = window.RD || {};
 
-RD.ui = {
-  overlay(on){
-    $('#overlay').toggleClass('hidden', !on);
-  },
-  skeleton(targetSel){
-    const html = `
-      <div class="grid gap-3">
-        <div class="skel h-10"></div>
-        <div class="skel h-28"></div>
-        <div class="skel h-28"></div>
-        <div class="skel h-28"></div>
-      </div>`;
-    $(targetSel).html(html);
+  RD.csrf = function () {
+    return $('meta[name="csrf-token"]').attr('content');
+  };
+
+  RD.toast = {
+    ok: (m) => toastr.success(m || 'OK'),
+    err: (m) => toastr.error(m || 'Terjadi kesalahan'),
+    info: (m) => toastr.info(m || ''),
+    warn: (m) => toastr.warning(m || '')
+  };
+
+  RD.ui = {
+    overlay(on) {
+      $('#overlay-loading').toggleClass('hidden', !on);
+    },
+    skeleton(targetSel) {
+      const html = `
+        <div class="hero-wrap p-5 md:p-8">
+          <div class="skeleton h-6 w-40 mb-4"></div>
+          <div class="skeleton h-10 w-72 mb-3"></div>
+          <div class="skeleton h-10 w-64 mb-6"></div>
+          <div class="skeleton h-5 w-full max-w-xl mb-2"></div>
+          <div class="skeleton h-5 w-5/6 max-w-lg mb-8"></div>
+          <div class="flex gap-3">
+            <div class="skeleton h-12 w-40"></div>
+            <div class="skeleton h-12 w-36"></div>
+          </div>
+        </div>
+
+        <div class="mt-8 grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div class="skeleton h-28"></div>
+          <div class="skeleton h-28"></div>
+          <div class="skeleton h-28"></div>
+          <div class="skeleton h-28"></div>
+        </div>
+      `;
+      $(targetSel).html(html);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  function setActiveNavByHash() {
+    const hash = location.hash || '#/home';
+    $('.nav-link').removeClass('active');
+
+    if (hash.startsWith('#/home')) $('[href="/#\\/home"]').addClass('active');
+    else if (hash.startsWith('#/products')) $('[href="/#\\/products"]').addClass('active');
+    else if (hash.startsWith('#/checkout')) $('[href="/#\\/checkout"]').addClass('active');
+    else if (hash.startsWith('#/order')) $('[href="/#\\/checkout"]').addClass('active');
+    else if (hash.startsWith('#/success')) $('[href="/#\\/checkout"]').addClass('active');
+    else if (hash.startsWith('#/failed')) $('[href="/#\\/checkout"]').addClass('active');
   }
-};
 
-RD.util = {
-  debounce(fn, wait){
-    let t;
-    return function(...args){
-      clearTimeout(t);
-      t = setTimeout(()=>fn.apply(this,args), wait);
+  function initAOS() {
+    if (!window.AOS) return;
+    if (!window.__AOS_INITED) {
+      AOS.init({
+        duration: 700,
+        easing: 'ease-out-cubic',
+        once: false,     // infinite animate on revisit
+        mirror: true,    // animate on scroll up
+        offset: 40
+      });
+      window.__AOS_INITED = true;
+    }
+    AOS.refreshHard();
+  }
+
+  async function loadPartial(url) {
+    RD.ui.skeleton('#app-content');
+    try {
+      const html = await $.ajax({ method: 'GET', url });
+      $('#app-content').html(html);
+      initAOS();
+      setActiveNavByHash();
+
+      // small “pop-in” feel for whole content
+      $('#app-content').css({ opacity: 0, transform: 'translateY(6px)' });
+      setTimeout(() => $('#app-content').css({ opacity: 1, transform: 'translateY(0)', transition: 'all .18s ease-out' }), 10);
+    } catch (e) {
+      RD.toast.err('Gagal memuat halaman.');
     }
   }
-};
 
-RD.anim = {
-  apply(){
-    const els = document.querySelectorAll('.fade-up');
-    els.forEach(el => {
-      // trigger in next frame
-      requestAnimationFrame(()=> el.classList.add('in'));
-    });
-  }
-};
+  function route() {
+    const hash = location.hash || '#/home';
 
-RD.router = (() => {
-  let leaveHandlers = [];
-  function onLeave(fn){ leaveHandlers.push(fn); }
+    // Public hash routes mapping
+    if (hash === '#/' || hash === '#') return (location.hash = '#/home');
 
-  async function loadPartial(url){
-    RD.ui.skeleton('#app-content');
-    const html = await $.ajax({ method:'GET', url });
-    $('#app-content').html(html);
-    RD.anim.apply();
-  }
+    if (hash.startsWith('#/home')) return loadPartial('/home');
+    if (hash.startsWith('#/products')) return loadPartial('/products');
+    if (hash.startsWith('#/checkout')) return loadPartial('/checkout');
 
-  async function route(){
-    // call leave handlers (stop intervals, etc)
-    try { leaveHandlers.forEach(fn => fn()); } catch(e) {}
-    leaveHandlers = [];
-
-    let hash = (window.location.hash || '#/home').replace('#', '');
-    if (hash === '/' || hash === '') hash = '/home';
-
-    // patterns:
-    // /home, /products, /checkout, /order/:id, /success/:id, /failed/:id
-    const parts = hash.split('/').filter(Boolean);
-    const base = parts[0] || 'home';
-
-    if (base === 'home') return loadPartial('/home');
-    if (base === 'products') return loadPartial('/products');
-    if (base === 'checkout') return loadPartial('/checkout');
-
-    if (base === 'order' && parts[1]) return loadPartial(`/order/${encodeURIComponent(parts[1])}`);
-    if (base === 'success' && parts[1]) return loadPartial(`/order/${encodeURIComponent(parts[1])}/success`);
-    if (base === 'failed' && parts[1]) return loadPartial(`/order/${encodeURIComponent(parts[1])}/failed`);
+    // order pages
+    if (hash.startsWith('#/order/')) {
+      const id = hash.replace('#/order/', '');
+      return loadPartial(`/order/${encodeURIComponent(id)}`);
+    }
+    if (hash.startsWith('#/success/')) {
+      const id = hash.replace('#/success/', '');
+      return loadPartial(`/order/${encodeURIComponent(id)}/success`);
+    }
+    if (hash.startsWith('#/failed/')) {
+      const id = hash.replace('#/failed/', '');
+      return loadPartial(`/order/${encodeURIComponent(id)}/failed`);
+    }
 
     // fallback
     return loadPartial('/home');
   }
 
-  function init(){
-    // global ajax csrf
-    $.ajaxSetup({
-      beforeSend: function(xhr, settings){
-        const m = (settings.type || settings.method || 'GET').toUpperCase();
-        if (m !== 'GET') xhr.setRequestHeader('X-CSRF-Token', window.__CSRF_TOKEN);
-      }
-    });
-
-    window.addEventListener('hashchange', route);
-    route();
+  // Drawer
+  function openDrawer() {
+    $('#drawer').removeClass('hidden');
+  }
+  function closeDrawer() {
+    $('#drawer').addClass('hidden');
   }
 
-  return { init, onLeave };
-})();
+  // Global AJAX defaults
+  $.ajaxSetup({
+    headers: { 'x-csrf-token': RD.csrf() }
+  });
 
-$(function(){
+  // Toastr config
   toastr.options = {
-    closeButton:true,
-    newestOnTop:true,
-    progressBar:true,
-    timeOut:2500
+    closeButton: true,
+    progressBar: true,
+    newestOnTop: true,
+    timeOut: 2500
   };
-  RD.router.init();
-});
+
+  // Events
+  $(document).on('click', '#btn-menu', function () {
+    openDrawer();
+  });
+  $(document).on('click', '#btn-close-drawer, #drawer .drawer-backdrop', function () {
+    closeDrawer();
+  });
+
+  // Close drawer when navigating
+  $(document).on('click', 'a[href^="/#/"]', function () {
+    closeDrawer();
+  });
+
+  // Route on hash change
+  window.addEventListener('hashchange', route);
+
+  // Initial route
+  $(function () {
+    setActiveNavByHash();
+    route();
+  });
+
+})();
