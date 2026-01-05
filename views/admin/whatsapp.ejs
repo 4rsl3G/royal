@@ -1,0 +1,107 @@
+<div class="fade-up">
+  <h2 class="text-2xl font-extrabold">WhatsApp</h2>
+  <p class="text-slate-500 text-sm">Start socket, pairing QR, status, dan test message.</p>
+</div>
+
+<div class="mt-4 grid lg:grid-cols-2 gap-4">
+  <div class="bg-white border rounded-2xl p-4 shadow-sm fade-up">
+    <div class="flex items-center justify-between">
+      <div class="font-bold">Connection</div>
+      <button class="btn-primary" id="startBtn"><i class="ri-play-circle-line"></i> Start</button>
+    </div>
+
+    <div class="mt-3">
+      <div class="text-xs text-slate-500">Status</div>
+      <div class="font-extrabold text-lg" id="st">-</div>
+      <div class="text-xs text-slate-500 mt-1" id="err"></div>
+    </div>
+
+    <div class="mt-4" id="qrBox" style="display:none;">
+      <div class="text-sm font-bold">Scan QR</div>
+      <img id="qrImg" class="mt-2 w-64 h-64 bg-slate-50 border rounded-2xl p-2" />
+      <div class="text-xs text-slate-500 mt-2">Buka WhatsApp → Linked devices → Link a device.</div>
+    </div>
+
+    <div class="mt-4 text-xs text-slate-500">
+      Catatan: Auto reconnect jika disconnect bukan loggedOut. Auth state disimpan di folder <b>./wa_auth</b>.
+    </div>
+  </div>
+
+  <div class="bg-white border rounded-2xl p-4 shadow-sm fade-up">
+    <div class="font-bold">Test Send</div>
+    <div class="mt-3 grid gap-3">
+      <div>
+        <label class="label">To (62xxxx)</label>
+        <input class="input" id="to" placeholder="62812xxxxxxx" />
+      </div>
+      <div>
+        <label class="label">Message</label>
+        <textarea class="input" id="msg" rows="4" placeholder="Hello dari Royal Dreams"></textarea>
+      </div>
+      <button class="btn-primary justify-center" id="testBtn">
+        <i class="ri-send-plane-2-line"></i> Send
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  async function refresh(){
+    try {
+      const resp = await $.ajax({
+        method:'GET',
+        url: window.__ADMIN_BASE + '/api/whatsapp/status',
+        headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
+      });
+      if (!resp.ok) return;
+      $('#st').text(resp.status);
+      $('#err').text(resp.error || '');
+      if (resp.status === 'need_pair' && resp.qr) {
+        $('#qrBox').show();
+        $('#qrImg').attr('src', resp.qr);
+      } else {
+        $('#qrBox').hide();
+      }
+    } catch(e) {}
+  }
+
+  $('#startBtn').on('click', async function(){
+    RD.ui.overlay(true);
+    try {
+      const resp = await $.ajax({
+        method:'POST',
+        url: window.__ADMIN_BASE + '/api/whatsapp/start',
+        headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
+      });
+      if (!resp.ok) throw new Error(resp.message || 'Failed');
+      toastr.success('WA started');
+      refresh();
+    } catch(e) {
+      toastr.error(e.responseJSON?.message || e.message || 'Failed');
+    } finally {
+      RD.ui.overlay(false);
+    }
+  });
+
+  $('#testBtn').on('click', async function(){
+    RD.ui.overlay(true);
+    try {
+      const resp = await $.ajax({
+        method:'POST',
+        url: window.__ADMIN_BASE + '/api/whatsapp/test',
+        data: { to: $('#to').val(), msg: $('#msg').val() },
+        headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
+      });
+      if (!resp.ok) throw new Error(resp.message || 'Failed');
+      toastr.success('Sent');
+    } catch(e) {
+      toastr.error(e.responseJSON?.message || e.message || 'Failed');
+    } finally {
+      RD.ui.overlay(false);
+    }
+  });
+
+  refresh();
+  const t = setInterval(refresh, 2500);
+  RD.router.onLeave(() => clearInterval(t));
+</script>
