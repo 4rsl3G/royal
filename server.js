@@ -15,6 +15,7 @@ const publicRoutes = require('./routes/public.routes');
 const apiRoutes = require('./routes/api.routes');
 const adminRoutes = require('./routes/admin.routes');
 const adminApiRoutes = require('./routes/admin.api.routes');
+const webhookRoutes = require('./routes/webhook.routes');
 
 const app = express();
 app.disable('x-powered-by');
@@ -82,6 +83,7 @@ app.use(`${ADMIN_BASE_PATH}/login`, loginLimiter);
 // Routes
 app.use('/', publicRoutes);
 app.use('/api', apiRoutes);
+app.use('/', webhookRoutes);
 
 // Admin
 app.use(ADMIN_BASE_PATH, adminRoutes);
