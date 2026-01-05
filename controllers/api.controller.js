@@ -6,7 +6,7 @@ const { getWAStatus, sendWA, renderTemplate } = require('../services/wa.service'
 
 function makeOrderId() {
   const rnd = crypto.randomBytes(4).toString('hex');
-  return `RD-${Date.now()}-${rnd}`; // Midtrans order_id
+  return `RD-${Date.now()}-${rnd}`;
 }
 
 function isFinalPayStatus(s) {
@@ -14,12 +14,30 @@ function isFinalPayStatus(s) {
   return final.includes(String(s || '').toLowerCase());
 }
 
+function clampInt(n, min, max) {
+  n = Number(n);
+  if (!Number.isFinite(n)) n = min;
+  n = Math.floor(n);
+  return Math.max(min, Math.min(max, n));
+}
+
+function getPublicBaseUrl(req) {
+  // prioritas: ENV -> host request
+  const env = String(process.env.PUBLIC_BASE_URL || '').trim();
+  if (env) return env.replace(/\/+$/, '');
+
+  const proto = (req.headers['x-forwarded-proto'] || req.protocol || 'http').toString().split(',')[0].trim();
+  const host = (req.headers['x-forwarded-host'] || req.headers.host || '').toString().split(',')[0].trim();
+  if (!host) return 'http://localhost:3000';
+  return `${proto}://${host}`;
+}
+
 async function createOrder(req, res) {
   const productId = Number(req.body.productId || 0);
   const gameId = cleanStr(req.body.gameId);
-  const nickname = cleanStr(req.body.nickname || '');
+  const nickname = cleanStr(req.body.nickname || '').slice(0, 40);
   const whatsappRaw = cleanStr(req.body.whatsapp);
-  const qtyRaw = Number(req.body.qty || 1);
+  const qtyRaw = req.body.qty;
 
   if (!productId) return res.status(400).json({ ok: false, message: 'productId wajib' });
   if (!gameId) return res.status(400).json({ ok: false, message: 'gameId wajib' });
@@ -29,13 +47,18 @@ async function createOrder(req, res) {
 
   const prodRows = await q(
     `SELECT id, sku, name, game_name, image, price_type, price, price_per_item, active
-     FROM products WHERE id=? AND active=1 LIMIT 1`,
+     FROM products
+     WHERE id=? AND active=1
+     LIMIT 1`,
     [productId]
   );
+
   const product = prodRows[0];
   if (!product) return res.status(404).json({ ok: false, message: 'Produk tidak ditemukan' });
 
-  let qty = Math.max(1, Number.isFinite(qtyRaw) ? qtyRaw : 1);
+  // batasi qty biar aman (hindari gross_amount kelewat besar)
+  let qty = clampInt(qtyRaw, 1, 999);
+
   let unit_price = 0;
   let gross_amount = 0;
   let item_price = 0;
@@ -48,14 +71,18 @@ async function createOrder(req, res) {
     item_price = unit_price;
     item_qty = 1;
   } else {
-    qty = Math.max(1, qty);
     unit_price = Number(product.price_per_item || 0);
     gross_amount = unit_price * qty;
     item_price = unit_price;
     item_qty = qty;
   }
 
-  if (gross_amount <= 0) return res.status(400).json({ ok: false, message: 'Harga produk tidak valid' });
+  if (!Number.isFinite(gross_amount) || gross_amount <= 0) {
+    return res.status(400).json({ ok: false, message: 'Harga produk tidak valid' });
+  }
+  if (gross_amount > 2000000000) {
+    return res.status(400).json({ ok: false, message: 'Total terlalu besar' });
+  }
 
   const order_id = makeOrderId();
 
@@ -67,8 +94,7 @@ async function createOrder(req, res) {
   );
 
   const { snap } = await buildMidtrans(req);
-
-  const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || 'http://localhost:3000';
+  const PUBLIC_BASE_URL = getPublicBaseUrl(req);
 
   const payload = {
     transaction_details: {
@@ -77,8 +103,8 @@ async function createOrder(req, res) {
     },
     item_details: [
       {
-        id: product.sku,
-        name: product.name,
+        id: String(product.sku || product.id),
+        name: String(product.name || 'Topup'),
         price: item_price,
         quantity: item_qty
       }
@@ -98,14 +124,13 @@ async function createOrder(req, res) {
     snapToken = resp.token;
   } catch (e) {
     await q(`UPDATE orders SET pay_status='failure', admin_note=? WHERE order_id=?`, [
-      `Midtrans error: ${String(e.message || e)}`,
+      `Midtrans error: ${String(e.message || e)}`.slice(0, 240),
       order_id
     ]);
     return res.status(500).json({ ok: false, message: 'Gagal membuat pembayaran' });
   }
 
   await q(`UPDATE orders SET snap_token=? WHERE order_id=?`, [snapToken, order_id]);
-
   return res.json({ ok: true, orderId: order_id, token: snapToken });
 }
 
@@ -113,22 +138,39 @@ async function status(req, res) {
   const orderId = cleanStr(req.params.orderId);
   if (!orderId) return res.status(400).json({ ok: false, message: 'orderId invalid' });
 
-  const rows = await q(`SELECT order_id, pay_status, fulfill_status FROM orders WHERE order_id=? LIMIT 1`, [orderId]);
+  const rows = await q(
+    `SELECT order_id, pay_status, fulfill_status
+     FROM orders
+     WHERE order_id=? LIMIT 1`,
+    [orderId]
+  );
   if (!rows[0]) return res.status(404).json({ ok: false, message: 'Order not found' });
+
+  const dbPay = String(rows[0].pay_status || 'pending');
+  const dbFulfill = String(rows[0].fulfill_status || 'waiting');
+
+  // ✅ hemat call Midtrans jika DB sudah final
+  if (isFinalPayStatus(dbPay)) {
+    return res.json({ ok: true, pay_status: dbPay, fulfill_status: dbFulfill, isFinal: true, midtrans: null });
+  }
 
   const { core } = await buildMidtrans(req);
 
   let mt;
   try {
     mt = await core.transaction.status(orderId);
-  } catch (e) {
-    // if Midtrans error, return existing db status
-    const pay_status = rows[0].pay_status;
-    const fulfill_status = rows[0].fulfill_status;
-    return res.json({ ok: true, pay_status, fulfill_status, isFinal: isFinalPayStatus(pay_status), midtrans: null });
+  } catch (_) {
+    return res.json({
+      ok: true,
+      pay_status: dbPay,
+      fulfill_status: dbFulfill,
+      isFinal: isFinalPayStatus(dbPay),
+      midtrans: null
+    });
   }
 
-  const pay_status = String(mt.transaction_status || rows[0].pay_status);
+  const pay_status = String(mt.transaction_status || dbPay);
+
   await q(`UPDATE orders SET pay_status=?, midtrans_raw=? WHERE order_id=?`, [
     pay_status,
     JSON.stringify(mt),
@@ -136,6 +178,7 @@ async function status(req, res) {
   ]);
 
   const updated = await q(`SELECT pay_status, fulfill_status FROM orders WHERE order_id=? LIMIT 1`, [orderId]);
+
   return res.json({
     ok: true,
     pay_status: updated[0].pay_status,
@@ -147,8 +190,10 @@ async function status(req, res) {
 // Webhook: MUST no CSRF
 async function midtransNotification(req, res) {
   const body = req.body || {};
+
   const order_id = String(body.order_id || '');
   const status_code = String(body.status_code || '');
+  // midtrans bisa kirim "10000.00" atau "10000"
   const gross_amount = String(body.gross_amount || '');
   const signature_key = String(body.signature_key || '');
 
@@ -186,6 +231,7 @@ async function midtransNotification(req, res) {
        WHERE o.order_id=? LIMIT 1`,
       [order_id]
     );
+
     const od = rows[0];
     if (od && !od.whatsapp_pay_sent_at) {
       const st = getWAStatus();
@@ -200,11 +246,12 @@ async function midtransNotification(req, res) {
           nickname: od.nickname,
           admin_note: od.admin_note
         });
+
         try {
           await sendWA(od.whatsapp, msg);
           await q(`UPDATE orders SET whatsapp_pay_sent_at=NOW() WHERE order_id=?`, [order_id]);
-        } catch (e) {
-          // ignore WA send error
+        } catch (_) {
+          // ignore WA error
         }
       }
     }
