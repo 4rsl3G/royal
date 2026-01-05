@@ -1,0 +1,62 @@
+<div class="fade-up">
+  <h2 class="text-2xl font-extrabold">Dashboard</h2>
+  <p class="text-slate-500 text-sm">Ringkasan order & performa (14 hari).</p>
+</div>
+
+<div class="mt-5 grid md:grid-cols-2 gap-3 fade-up">
+  <div class="bg-white border rounded-2xl p-4 shadow-sm">
+    <div class="text-sm text-slate-500">Hari ini</div>
+    <div class="mt-1 text-2xl font-extrabold" id="todayCount">-</div>
+    <div class="text-slate-600 text-sm">Sum: <b id="todaySum">-</b></div>
+  </div>
+  <div class="bg-white border rounded-2xl p-4 shadow-sm">
+    <div class="text-sm text-slate-500">Total</div>
+    <div class="mt-1 text-2xl font-extrabold" id="totalCount">-</div>
+    <div class="text-slate-600 text-sm">Sum: <b id="totalSum">-</b></div>
+  </div>
+</div>
+
+<div class="mt-4 bg-white border rounded-2xl p-4 shadow-sm fade-up">
+  <div class="font-bold">Chart 14 hari (text)</div>
+  <div class="mt-3 text-sm text-slate-600" id="chartBox">Loading…</div>
+</div>
+
+<script>
+  function rupiah(n){ return 'Rp ' + (Number(n||0)).toLocaleString('id-ID'); }
+
+  async function loadMetrics(){
+    RD.ui.overlay(true);
+    try {
+      const resp = await $.ajax({
+        method:'GET',
+        url: window.__ADMIN_BASE + '/api/metrics',
+        headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
+      });
+      if (!resp.ok) throw new Error('Failed');
+
+      $('#todayCount').text(resp.today.cnt);
+      $('#todaySum').text(rupiah(resp.today.sum));
+      $('#totalCount').text(resp.total.cnt);
+      $('#totalSum').text(rupiah(resp.total.sum));
+
+      const rows = resp.chart14 || [];
+      const lines = rows.map(r => {
+        const bar = '█'.repeat(Math.min(30, Math.max(1, Math.floor(r.cnt))));
+        return `<div class="flex items-center justify-between gap-3">
+          <div class="w-28 text-xs text-slate-500">${String(r.d).slice(0,10)}</div>
+          <div class="flex-1">${bar}</div>
+          <div class="w-16 text-right">${r.cnt}</div>
+          <div class="w-28 text-right text-slate-500 text-xs">${rupiah(r.sum)}</div>
+        </div>`;
+      }).join('');
+
+      $('#chartBox').html(lines || '<div class="text-slate-500">No data</div>');
+    } catch(e) {
+      toastr.error(e.message || 'Failed load metrics');
+    } finally {
+      RD.ui.overlay(false);
+    }
+  }
+
+  loadMetrics();
+</script>
