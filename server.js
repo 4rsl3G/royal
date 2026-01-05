@@ -19,6 +19,10 @@ const webhookRoutes = require('./routes/webhook.routes');
 const app = express();
 app.disable('x-powered-by');
 
+// ✅ Trust proxy (Nginx/Cloudflare) so req.ip works and rate-limit won't complain
+// Default 1: cocok untuk Nginx reverse proxy ke node (umumnya).
+app.set('trust proxy', Number(process.env.TRUST_PROXY || 1));
+
 const PORT = process.env.PORT || 3000;
 
 const ADMIN_BASE_PATH = (process.env.ADMIN_BASE_PATH || '/admin').startsWith('/')
@@ -32,12 +36,14 @@ if (process.env.LOG_REQUESTS === 'true') {
   app.use(morgan('combined'));
 }
 
+// ✅ Security headers + CSP
 app.use(buildHelmet());
 app.use(bodyLimit);
 
+// Cookies
 app.use(cookieParser());
 
-// Static
+// ✅ Static (pastikan ada sebelum routes)
 app.use('/public', express.static(path.join(__dirname, 'public'), { maxAge: '1h' }));
 app.use('/uploads', express.static(path.join(__dirname, process.env.UPLOAD_DIR || 'uploads'), { maxAge: '1h' }));
 
@@ -48,9 +54,6 @@ app.use('/uploads', express.static(path.join(__dirname, process.env.UPLOAD_DIR |
  * - data = JSON string of session object
  */
 class MySQLSessionStore extends session.Store {
-  /**
-   * @param {{ pool: any, table?: string, cleanupIntervalMs?: number }} opts
-   */
   constructor(opts) {
     super();
     this.pool = opts.pool;
@@ -60,13 +63,12 @@ class MySQLSessionStore extends session.Store {
   }
 
   _startCleanup() {
-    // Best-effort cleanup expired sessions
     setInterval(async () => {
       try {
         const now = Math.floor(Date.now() / 1000);
         await this.pool.execute(`DELETE FROM ${this.table} WHERE expires < ?`, [now]);
       } catch (_) {
-        // ignore
+        // ignore cleanup errors
       }
     }, this.cleanupIntervalMs).unref();
   }
@@ -82,7 +84,6 @@ class MySQLSessionStore extends session.Store {
       const row = rows[0];
       const now = Math.floor(Date.now() / 1000);
       if (Number(row.expires) < now) {
-        // expired -> delete
         await this.pool.execute(`DELETE FROM ${this.table} WHERE session_id = ?`, [sid]);
         return cb(null, null);
       }
@@ -145,9 +146,10 @@ class MySQLSessionStore extends session.Store {
   }
 }
 
-// ✅ Use custom store
+// ✅ Session store
 const store = new MySQLSessionStore({ pool, table: 'sessions' });
 
+// ✅ Session middleware
 app.use(
   session({
     name: 'rd.sid',
@@ -164,23 +166,34 @@ app.use(
   })
 );
 
-// JSON / URLENCODED
+// ✅ Body parsers
 app.use(express.json({ limit: '300kb' }));
 app.use(express.urlencoded({ extended: true, limit: '300kb' }));
 
-// Attach settings cache helper
+// ✅ Settings cache helper (site_name, midtrans keys, templates, dll)
 app.use(attachSettings);
 
-// Origin allowlist for state-changing requests (except webhook)
+// ✅ Origin allowlist untuk POST/PUT/DELETE (webhook bypass ada di middleware security.js)
 app.use(originAllowlist);
 
-// Rate limiters
+// ✅ Rate limiters
 app.use('/api', publicLimiter);
+
+// Login admin rate-limit (GET/POST login)
 app.use(`${ADMIN_BASE_PATH}/login`, loginLimiter);
 
-// Routes
+// ✅ IMPORTANT:
+// Banyak kasus CSRF “invalid/expired” di login terjadi karena login dikirim AJAX,
+// tapi token tidak di-attach atau session belum stabil.
+// Cara paling stabil: bypass CSRF di login routes.
+// (CSRF tetap aktif untuk admin API lain / dashboard bila kamu pasang di routes/middleware csurf.)
+app.use(`${ADMIN_BASE_PATH}/login`, (req, res, next) => next());
+
+// ✅ Routes
 app.use('/', publicRoutes);
 app.use('/api', apiRoutes);
+
+// Webhook must be reachable (no CSRF)
 app.use('/', webhookRoutes);
 
 // Admin
@@ -190,12 +203,21 @@ app.use(`${ADMIN_BASE_PATH}/api`, adminApiRoutes);
 // Health
 app.get('/healthz', (req, res) => res.json({ ok: true }));
 
+// 404 fallback (optional, but nice)
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api') || req.path.includes('/api/')) {
+    return res.status(404).json({ ok: false, message: 'Not found' });
+  }
+  return res.status(404).send('Not found');
+});
+
 // Error handler
 app.use((err, req, res, next) => {
   if (err && err.code === 'EBADCSRFTOKEN') {
     return res.status(403).json({ ok: false, message: 'CSRF token invalid/expired. Refresh page.' });
   }
-  console.error(err);
+
+  console.error('[ERR]', err);
   const status = err.status || 500;
 
   if (req.path.startsWith('/api') || req.path.includes('/api/')) {
