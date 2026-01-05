@@ -1,14 +1,11 @@
-// public/order.js (NEW - Grid.js premium table + 5 per page + modal smooth + filters)
-window.RD = window.RD || {};
-RD.pages = RD.pages || {};
-
 (function () {
-  let grid = null;
-  let DATA = [];
-  let CURRENT = null;
+  // jalanin hanya kalau halaman orders sedang aktif + elemen ada
+  function isOrdersPage() {
+    return (location.hash || '').startsWith('#/orders') && document.getElementById('ordersGrid');
+  }
 
+  // util
   function rupiah(n){ return 'Rp ' + (Number(n||0)).toLocaleString('id-ID'); }
-
   function escapeHtml(s){
     return String(s || '')
       .replaceAll('&','&amp;')
@@ -17,15 +14,13 @@ RD.pages = RD.pages || {};
       .replaceAll('"','&quot;')
       .replaceAll("'",'&#039;');
   }
-
   function payBadge(st){
     st = String(st||'').toLowerCase();
-    if(st === 'settlement' || st === 'capture') return `<span class="badge good"><i class="ri-check-line"></i> ${escapeHtml(st)}</span>`;
-    if(st === 'pending') return `<span class="badge warn"><i class="ri-time-line"></i> pending</span>`;
-    if(st === 'expire' || st === 'cancel' || st === 'deny' || st === 'failure') return `<span class="badge bad"><i class="ri-close-line"></i> ${escapeHtml(st)}</span>`;
+    if(st === 'settlement' || st === 'capture') return `<span class="badge good"><i class="ri-check-line"></i> ${st}</span>`;
+    if(st === 'pending') return `<span class="badge warn"><i class="ri-time-line"></i> ${st}</span>`;
+    if(['expire','cancel','deny','failure'].includes(st)) return `<span class="badge bad"><i class="ri-close-line"></i> ${st}</span>`;
     return `<span class="badge"><i class="ri-question-line"></i> ${escapeHtml(st || '-')}</span>`;
   }
-
   function fulfillBadge(st){
     st = String(st||'').toLowerCase();
     if(st === 'done') return `<span class="badge good"><i class="ri-check-double-line"></i> done</span>`;
@@ -35,204 +30,193 @@ RD.pages = RD.pages || {};
     return `<span class="badge">${escapeHtml(st||'-')}</span>`;
   }
 
-  function openModal(data){
-    CURRENT = String(data.order_id || '');
-    $('#mOrderId').text(CURRENT);
-    $('#mFulfill').val(String(data.fulfill_status || 'waiting'));
-    $('#mNote').val(String(data.admin_note || ''));
-    $('#mPayBadge').html(payBadge(data.pay_status || '-'));
-    $('#mGross').text(rupiah(data.gross_amount || 0));
+  let grid = null;
+  let LAST_DATA = [];
 
-    $('body').addClass('modal-open');
-    const $m = $('#modal');
-    $m.removeClass('hidden');
-    requestAnimationFrame(() => $m.addClass('is-open'));
-  }
-
-  function closeModal(){
-    const $m = $('#modal');
-    $m.removeClass('is-open');
-    setTimeout(() => {
-      $m.addClass('hidden');
-      $('body').removeClass('modal-open');
-      CURRENT = null;
-    }, 180);
-  }
-
-  function buildGrid(rows){
-    const el = document.getElementById('ordersGrid');
-    if (!el) return;
-
-    // destroy previous
-    if (grid && typeof grid.destroy === 'function') {
-      try { grid.destroy(); } catch (_) {}
-      grid = null;
-    }
-    el.innerHTML = '';
-
-    const data = rows.map(o => ([
-      o.order_id,
-      o.product_name,
-      `${o.game_id}${o.nickname ? ' • ' + o.nickname : ''}${o.whatsapp ? ' • ' + o.whatsapp : ''}`,
-      rupiah(o.gross_amount),
-      gridjs.html(payBadge(o.pay_status)),
-      gridjs.html(fulfillBadge(o.fulfill_status)),
-      gridjs.html(`
-        <button class="btn btn-sm js-edit"
-          data-oid="${escapeHtml(o.order_id)}"
-          data-pay="${escapeHtml(o.pay_status)}"
-          data-ful="${escapeHtml(o.fulfill_status)}"
-          data-note="${escapeHtml(o.admin_note || '')}"
-          data-gross="${escapeHtml(String(o.gross_amount||0))}">
-          <i class="ri-pencil-line"></i> Edit
-        </button>
-      `)
-    ]));
-
-    grid = new gridjs.Grid({
-      columns: [
-        { name: 'Order', width: '260px' },
-        { name: 'Produk', width: '260px' },
-        { name: 'Customer', width: '300px' },
-        { name: 'Amount', width: '140px' },
-        { name: 'Pay', width: '140px' },
-        { name: 'Fulfill', width: '160px' },
-        { name: 'Action', width: '140px' }
-      ],
-      data,
-      sort: true,
-      pagination: { limit: 5 },
-      fixedHeader: true,
-      height: '62vh',
-      className: {
-        table: 'rd-grid',
-        th: 'rd-grid-th',
-        td: 'rd-grid-td'
-      },
-      language: {
-        'search': { 'placeholder': 'Search table...' },
-        'pagination': {
-          'previous': 'Prev',
-          'next': 'Next',
-          'showing': 'Showing',
-          'results': () => 'rows'
-        },
-        'noRecordsFound': 'No data'
-      }
-    }).render(el);
-  }
-
-  async function load(){
+  async function fetchOrders() {
     const qs = $.param({
       q: $('#q').val(),
       pay_status: $('#pay_status').val(),
       fulfill_status: $('#fulfill_status').val()
     });
 
-    // skeleton
-    const $grid = $('#ordersGrid');
-    $grid.html(`<div class="skeleton" style="height:340px;border-radius:22px;"></div>`);
+    const url = window.__ADMIN_BASE + '/api/orders?' + qs;
+
+    const resp = await $.ajax({
+      method: 'GET',
+      url,
+      headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
+    });
+
+    if (!resp || !resp.ok) throw new Error(resp?.message || 'Failed load orders');
+    return resp.data || [];
+  }
+
+  function renderTable(data) {
+    $('#countBox').text(data.length);
+
+    // kalau Grid.js belum ada, kasih fallback error jelas
+    if (!window.gridjs) {
+      toastr.error('Grid.js belum terload. Pastikan script gridjs ada.');
+      return;
+    }
+
+    const rows = data.map(o => ([
+      `<div class="font-extrabold">${escapeHtml(o.order_id)}</div>
+       <div class="text-xs text-slate-500">${escapeHtml(String(o.created_at).replace('T',' ').slice(0,19))}</div>`,
+      `<div class="font-extrabold">${escapeHtml(o.product_name)}</div>
+       <div class="text-xs text-slate-500">qty: ${Number(o.qty||0)} • unit: ${rupiah(o.unit_price||0)}</div>`,
+      `<div class="font-extrabold">${escapeHtml(o.game_id)}</div>
+       <div class="text-xs text-slate-500">${escapeHtml(o.nickname || '-')} • ${escapeHtml(o.whatsapp || '-')}</div>`,
+      `<div class="font-extrabold">${rupiah(o.gross_amount)}</div>`,
+      payBadge(o.pay_status),
+      fulfillBadge(o.fulfill_status),
+      `<button class="btn btn-sm js-edit"
+        data-oid="${escapeHtml(o.order_id)}"
+        data-pay="${escapeHtml(o.pay_status)}"
+        data-ful="${escapeHtml(o.fulfill_status)}"
+        data-note="${escapeHtml(o.admin_note || '')}"
+        data-gross="${escapeHtml(String(o.gross_amount||0))}">
+        <i class="ri-pencil-line"></i> Edit
+      </button>`
+    ]));
+
+    if (grid) grid.destroy();
+
+    grid = new gridjs.Grid({
+      columns: [
+        { name: 'Order' },
+        { name: 'Produk' },
+        { name: 'Customer' },
+        { name: 'Amount' },
+        { name: 'Pay' },
+        { name: 'Fulfill' },
+        { name: 'Action' }
+      ],
+      data: rows,
+      pagination: { enabled: true, limit: 5 },
+      sort: true,
+      search: false,
+      className: {
+        table: 'gridjs-table',
+      }
+    }).render(document.getElementById('ordersGrid'));
+  }
+
+  function openModalFromData(data){
+    $('#mOrderId').text(data.oid);
+    $('#mFulfill').val(data.ful || 'waiting');
+    $('#mNote').val(data.note || '');
+    $('#mPayBadge').html(payBadge(data.pay || '-'));
+    $('#mGross').text(rupiah(data.gross || 0));
+
+    $('body').addClass('modal-open');
+    $('#modal').removeClass('hidden').removeClass('rd-modal-hide').addClass('rd-modal-show');
+  }
+
+  function closeModal(){
+    $('#modal').removeClass('rd-modal-show').addClass('rd-modal-hide');
+    setTimeout(() => {
+      $('#modal').addClass('hidden');
+      $('body').removeClass('modal-open');
+    }, 180);
+  }
+
+  async function loadAndRender() {
+    if (!isOrdersPage()) return;
 
     try {
-      const resp = await $.ajax({
-        method:'GET',
-        url: window.__ADMIN_BASE + '/api/orders?' + qs,
-        headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
-      });
+      // skeleton kecil
+      $('#ordersGrid').html('<div class="skeleton" style="height:120px;border-radius:18px;"></div>');
 
-      if (!resp || !resp.ok) throw new Error(resp?.message || 'Failed');
-
-      DATA = Array.isArray(resp.data) ? resp.data : [];
-      $('#countBox').text(DATA.length);
-
-      buildGrid(DATA);
-
-    } catch(e) {
-      toastr.error(e.message || 'order gagal dimuat');
-      $('#ordersGrid').html(`<div class="text-rose-600 text-sm">Error load orders</div>`);
+      const data = await fetchOrders();
+      LAST_DATA = data;
+      renderTable(data);
+    } catch (e) {
+      toastr.error(e.message || 'Failed load orders');
+      $('#ordersGrid').html(`<div class="text-rose-600 text-sm">Gagal load orders</div>`);
       $('#countBox').text('0');
     }
   }
 
-  function mount(){
-    // events (bind once per mount)
-    $(document).off('click.rdorders');
+  function bindEventsOnce() {
+    // refresh + filter
+    $(document).off('click', '#btnRefresh').on('click', '#btnRefresh', loadAndRender);
 
-    $(document).on('click.rdorders', '#btnRefresh', load);
-
-    $(document).on('click.rdorders', '#btnQuickPending', function(){
+    $(document).off('click', '#btnQuickPending').on('click', '#btnQuickPending', function(){
       $('#pay_status').val('pending');
       $('#fulfill_status').val('');
-      load();
+      loadAndRender();
     });
 
-    $(document).on('click.rdorders', '#btnQuickWaiting', function(){
+    $(document).off('click', '#btnQuickWaiting').on('click', '#btnQuickWaiting', function(){
       $('#fulfill_status').val('waiting');
       $('#pay_status').val('');
-      load();
+      loadAndRender();
     });
 
-    $(document).on('keyup.rdorders', '#q', RD.util.debounce(load, 400));
-    $(document).on('change.rdorders', '#pay_status, #fulfill_status', load);
+    $(document).off('keyup', '#q').on('keyup', '#q', (window.RD?.util?.debounce || ((f)=>f))(loadAndRender, 400));
+    $(document).off('change', '#pay_status, #fulfill_status').on('change', '#pay_status, #fulfill_status', loadAndRender);
 
-    // delegated edit
-    $(document).on('click.rdorders', '.js-edit', function(){
-      const oid = String($(this).data('oid') || '');
-      const o = (DATA || []).find(x => String(x.order_id) === oid);
-
-      // prefer full object from DATA, fallback to dataset
-      if (o) return openModal(o);
-
-      openModal({
-        order_id: oid,
-        pay_status: String($(this).data('pay') || ''),
-        fulfill_status: String($(this).data('ful') || ''),
-        admin_note: String($(this).data('note') || ''),
-        gross_amount: Number($(this).data('gross') || 0)
-      });
+    // edit modal (delegated)
+    $(document).off('click', '.js-edit').on('click', '.js-edit', function(){
+      const data = {
+        oid: String($(this).data('oid') || ''),
+        pay: String($(this).data('pay') || ''),
+        ful: String($(this).data('ful') || ''),
+        note: String($(this).data('note') || ''),
+        gross: String($(this).data('gross') || '0')
+      };
+      openModalFromData(data);
     });
 
-    $(document).on('click.rdorders', '#closeModal, #modalBackdrop', closeModal);
+    $(document).off('click', '#closeModal').on('click', '#closeModal', closeModal);
+    $(document).off('click', '#modal').on('click', '#modal', (e) => { if (e.target.id === 'modal') closeModal(); });
 
-    $(document).on('keydown.rdorders', function(e){
+    $(document).off('keydown.rdorders').on('keydown.rdorders', function(e){
       if (e.key === 'Escape' && !$('#modal').hasClass('hidden')) closeModal();
     });
 
-    $(document).on('click.rdorders', '#saveBtn', async function(){
-      if (!CURRENT) return;
-      RD.ui.overlay(true);
+    // save
+    $(document).off('click', '#saveBtn').on('click', '#saveBtn', async function(){
+      const oid = $('#mOrderId').text().trim();
+      if (!oid) return;
+
+      window.RD?.ui?.overlay?.(true);
       try {
         const resp = await $.ajax({
           method:'POST',
-          url: window.__ADMIN_BASE + '/api/orders/' + encodeURIComponent(CURRENT) + '/fulfill',
+          url: window.__ADMIN_BASE + '/api/orders/' + encodeURIComponent(oid) + '/fulfill',
           data: {
             fulfill_status: $('#mFulfill').val(),
             admin_note: $('#mNote').val()
           },
           headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
         });
-        if (!resp || !resp.ok) throw new Error(resp?.message || 'Failed');
+
+        if (!resp?.ok) throw new Error(resp?.message || 'Failed');
         toastr.success('Saved');
         closeModal();
-        load();
-      } catch(e) {
+        loadAndRender();
+      } catch (e) {
         toastr.error(e.responseJSON?.message || e.message || 'Failed');
       } finally {
-        RD.ui.overlay(false);
+        window.RD?.ui?.overlay?.(false);
       }
     });
-
-    load();
   }
 
-  function unmount(){
-    $(document).off('.rdorders');
-    try { if (grid && typeof grid.destroy === 'function') grid.destroy(); } catch(_) {}
-    grid = null;
-    DATA = [];
-    CURRENT = null;
+  // SPA hook: setiap hash berubah atau content berubah, coba init orders
+  function tryInitOrders() {
+    if (!isOrdersPage()) return;
+    bindEventsOnce();
+    loadAndRender();
   }
 
-  RD.pages.orders = { mount, unmount };
+  window.addEventListener('hashchange', tryInitOrders);
+
+  // ketika partial selesai di-inject, tunggu sedikit lalu cek
+  const mo = new MutationObserver(() => { tryInitOrders(); });
+  mo.observe(document.getElementById('admin-content'), { childList: true, subtree: true });
 
 })();
