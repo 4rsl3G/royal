@@ -1,11 +1,11 @@
-(function () {
-  // ====== Guard / init only on Orders page ======
-  function isOrdersRoute() {
-    return (location.hash || '').startsWith('#/orders');
-  }
-  function el(id) { return document.getElementById(id); }
+window.RDOrders = window.RDOrders || {};
 
-  // ====== Helpers ======
+window.RDOrders.init = (function () {
+  let inited = false;
+  let GRID = null;
+  let DATA = [];
+  let CURRENT = null;
+
   function rupiah(n) { return 'Rp ' + (Number(n || 0)).toLocaleString('id-ID'); }
   function escapeHtml(s) {
     return String(s || '')
@@ -42,7 +42,6 @@
     return new Promise((resolve, reject) => {
       if (window.gridjs && window.gridjs.Grid) return resolve();
 
-      // CSS
       if (!document.getElementById('gridjs-css')) {
         const link = document.createElement('link');
         link.id = 'gridjs-css';
@@ -51,28 +50,19 @@
         document.head.appendChild(link);
       }
 
-      // JS
       const s = document.createElement('script');
       s.src = 'https://unpkg.com/gridjs/dist/gridjs.umd.js';
       s.onload = () => resolve();
-      s.onerror = () => reject(new Error('gridjs load failed'));
+      s.onerror = () => reject(new Error('Grid.js CDN blocked'));
       document.head.appendChild(s);
     });
   }
 
-  // ====== State ======
-  let GRID = null;
-  let DATA = [];
-  let CURRENT = null;
-
-  // ====== Modal controls ======
   function showModal() {
-    const m = el('modal');
+    const m = document.getElementById('modal');
     if (!m) return;
     m.classList.remove('hidden');
     document.body.classList.add('modal-open');
-
-    // anim show
     requestAnimationFrame(() => {
       m.classList.add('rd-modal-show');
       m.classList.remove('rd-modal-hide');
@@ -80,12 +70,10 @@
   }
 
   function hideModal() {
-    const m = el('modal');
+    const m = document.getElementById('modal');
     if (!m) return;
     m.classList.add('rd-modal-hide');
     m.classList.remove('rd-modal-show');
-
-    // wait transition then hide
     setTimeout(() => {
       m.classList.add('hidden');
       document.body.classList.remove('modal-open');
@@ -107,130 +95,119 @@
     showModal();
   }
 
-  // ====== Grid render ======
   function mountGrid(rows) {
-    const mount = el('ordersGridMount');
+    const mount = document.getElementById('ordersGridMount');
     if (!mount) return;
 
     const { html } = window.gridjs;
 
-    const mapped = (rows || []).map(o => ({
-      order_id: o.order_id,
-      created_at: o.created_at,
-      product_name: o.product_name,
-      game_id: o.game_id,
-      nickname: o.nickname,
-      whatsapp: o.whatsapp,
-      qty: o.qty,
-      unit_price: o.unit_price,
-      gross_amount: o.gross_amount,
-      pay_status: o.pay_status,
-      fulfill_status: o.fulfill_status,
-      admin_note: o.admin_note || ''
-    }));
-
-    // destroy old
     if (GRID) {
       try { GRID.destroy(); } catch (_) {}
       GRID = null;
       mount.innerHTML = '';
     }
 
+    // Grid.js data = array of object, lebih stabil daripada trik cell object
+    const mapped = (rows || []).map(o => ({
+      order_id: o.order_id,
+      created_at: o.created_at,
+      product_name: o.product_name,
+      qty: o.qty,
+      unit_price: o.unit_price,
+      game_id: o.game_id,
+      nickname: o.nickname,
+      whatsapp: o.whatsapp,
+      gross_amount: o.gross_amount,
+      pay_status: o.pay_status,
+      fulfill_status: o.fulfill_status,
+      admin_note: o.admin_note || ''
+    }));
+
     GRID = new gridjs.Grid({
       columns: [
         {
           name: 'Order',
-          width: '220px',
-          formatter: (_, row) => {
-            const o = row._cells[0].data;
-            // NOTE: gridjs formatter pakai row object, tapi kita butuh data lengkap -> gunakan rowDataIndex
+          formatter: (cell, row) => {
+            const o = row._cells ? row.cells?.[0]?.data : row; // fallback
+            const data = row?._data || row?.cells?.[0]?.data || row?.data || null;
+            const obj = row?.cells ? row.cells[0].data : row;
+
+            const x = row?.cells ? row.cells[0].data : null;
+            const it = row?.data ? row.data : null;
+
+            const d = row?.cells ? row.cells[0].data : null;
+
+            // row object berbeda versi, ambil dari row._data kalau ada
+            const item = row?._data || row?.data || row?.cells?.[0]?.data || null;
+            const real = item || row?.cells?.[0]?.data || null;
+
+            // Paling aman: gunakan row._data kalau ada, kalau tidak gunakan mapped[rowIndex] tidak tersedia.
+            const r = row?._data || row?.data || row?.cells?.[0]?.data || {};
+            const orderId = r.order_id || mapped[row._index]?.order_id || '';
+            const createdAt = r.created_at || mapped[row._index]?.created_at || '';
+
             return html(`<div class="rd-grid-order">
-              <div class="rd-grid-strong">${escapeHtml(o.order_id)}</div>
-              <div class="rd-grid-sub">${fmtTime(o.created_at)}</div>
+              <div class="rd-grid-strong">${escapeHtml(orderId)}</div>
+              <div class="rd-grid-sub">${fmtTime(createdAt)}</div>
             </div>`);
           }
         },
         {
           name: 'Produk',
-          width: '240px',
           formatter: (_, row) => {
-            const o = row._cells[0].data;
+            const r = row?._data || row?.data || {};
             return html(`<div class="rd-grid-order">
-              <div class="rd-grid-strong">${escapeHtml(o.product_name || '-')}</div>
-              <div class="rd-grid-sub">qty ${Number(o.qty || 0)} • unit ${rupiah(o.unit_price || 0)}</div>
+              <div class="rd-grid-strong">${escapeHtml(r.product_name || '-')}</div>
+              <div class="rd-grid-sub">qty ${Number(r.qty || 0)} • unit ${rupiah(r.unit_price || 0)}</div>
             </div>`);
           }
         },
         {
           name: 'Customer',
-          width: '240px',
           formatter: (_, row) => {
-            const o = row._cells[0].data;
+            const r = row?._data || row?.data || {};
             return html(`<div class="rd-grid-order">
-              <div class="rd-grid-strong">${escapeHtml(o.game_id || '-')}</div>
-              <div class="rd-grid-sub">${escapeHtml(o.nickname || '-') } • ${escapeHtml(o.whatsapp || '-')}</div>
+              <div class="rd-grid-strong">${escapeHtml(r.game_id || '-')}</div>
+              <div class="rd-grid-sub">${escapeHtml(r.nickname || '-') } • ${escapeHtml(r.whatsapp || '-')}</div>
             </div>`);
           }
         },
         {
           name: 'Amount',
-          width: '150px',
           formatter: (_, row) => {
-            const o = row._cells[0].data;
-            return html(`<div class="rd-grid-strong">${rupiah(o.gross_amount || 0)}</div>`);
+            const r = row?._data || row?.data || {};
+            return html(`<div class="rd-grid-strong">${rupiah(r.gross_amount || 0)}</div>`);
           }
         },
         {
           name: 'Pay',
-          width: '140px',
           formatter: (_, row) => {
-            const o = row._cells[0].data;
-            return html(payBadgeHTML(o.pay_status));
+            const r = row?._data || row?.data || {};
+            return html(payBadgeHTML(r.pay_status));
           }
         },
         {
           name: 'Fulfill',
-          width: '150px',
           formatter: (_, row) => {
-            const o = row._cells[0].data;
-            return html(fulfillBadgeHTML(o.fulfill_status));
+            const r = row?._data || row?.data || {};
+            return html(fulfillBadgeHTML(r.fulfill_status));
           }
         },
         {
           name: 'Action',
-          width: '130px',
           formatter: (_, row) => {
-            const o = row._cells[0].data;
-            const payload = escapeHtml(JSON.stringify({
-              order_id: o.order_id,
-              pay_status: o.pay_status,
-              fulfill_status: o.fulfill_status,
-              admin_note: o.admin_note,
-              gross_amount: o.gross_amount,
-              game_id: o.game_id,
-              nickname: o.nickname,
-              whatsapp: o.whatsapp,
-              created_at: o.created_at,
-              product_name: o.product_name,
-              qty: o.qty,
-              unit_price: o.unit_price
-            }));
-            return html(`
-              <button class="btn btn-sm rd-btn-edit" data-row='${payload}'>
-                <i class="ri-pencil-line"></i> Edit
-              </button>
-            `);
+            const r = row?._data || row?.data || {};
+            const payload = escapeHtml(JSON.stringify(r));
+            return html(`<button class="btn btn-sm rd-btn-edit" data-row='${payload}'><i class="ri-pencil-line"></i> Edit</button>`);
           }
         }
       ],
 
-      // IMPORTANT: gridjs rows data => kita pakai trick: seluruh object di cell pertama agar formatter bisa akses semua
-      data: mapped.map(o => [o]),
+      // gridjs bisa pakai array of objects via "data" kalau columns formatter pakai row._data (works)
+      data: mapped,
 
       pagination: { enabled: true, limit: 5 },
       sort: true,
-
-      // search internal OFF: kita pakai API filter (lebih ringan)
       search: false,
 
       className: {
@@ -241,59 +218,44 @@
         pagination: 'rd-grid-pagination'
       },
 
-      style: {
-        table: { width: '100%' }
-      },
-
       language: {
-        'pagination': {
-          'previous': 'Prev',
-          'next': 'Next',
-          'showing': 'Menampilkan',
-          'results': () => 'data'
-        },
-        'noRecordsFound': 'Tidak ada data',
-        'error': 'Gagal memuat'
+        noRecordsFound: 'Tidak ada data',
+        error: 'Gagal memuat'
       }
     });
 
     GRID.render(mount);
 
-    // count
     $('#countBox').text(rows.length);
 
-    // bind edit buttons after render
     $(document).off('click', '.rd-btn-edit').on('click', '.rd-btn-edit', function () {
       try {
         const raw = $(this).attr('data-row') || '{}';
         const o = JSON.parse(raw);
         openModalFromRow(o);
       } catch (e) {
-        if (window.toastr) toastr.error('Data row invalid');
+        toastr.error('Data row invalid');
       }
     });
   }
 
-  // ====== Load data from API ======
   async function loadOrders() {
-    if (!isOrdersRoute()) return;
-    if (!el('btnRefresh')) return;
+    const mount = document.getElementById('ordersGridMount');
+    if (mount) {
+      mount.innerHTML = `
+        <div class="skeleton" style="height:58px;border-radius:18px;margin-bottom:10px;"></div>
+        <div class="skeleton" style="height:58px;border-radius:18px;margin-bottom:10px;"></div>
+        <div class="skeleton" style="height:58px;border-radius:18px;margin-bottom:10px;"></div>
+        <div class="skeleton" style="height:58px;border-radius:18px;margin-bottom:10px;"></div>
+        <div class="skeleton" style="height:58px;border-radius:18px;"></div>
+      `;
+    }
 
     const qs = $.param({
       q: $('#q').val(),
       pay_status: $('#pay_status').val(),
       fulfill_status: $('#fulfill_status').val()
     });
-
-    // skeleton
-    const mount = el('ordersGridMount');
-    if (mount) mount.innerHTML = `
-      <div class="skeleton" style="height:58px;border-radius:18px;margin-bottom:10px;"></div>
-      <div class="skeleton" style="height:58px;border-radius:18px;margin-bottom:10px;"></div>
-      <div class="skeleton" style="height:58px;border-radius:18px;margin-bottom:10px;"></div>
-      <div class="skeleton" style="height:58px;border-radius:18px;margin-bottom:10px;"></div>
-      <div class="skeleton" style="height:58px;border-radius:18px;"></div>
-    `;
 
     try {
       const resp = await $.ajax({
@@ -307,12 +269,12 @@
       DATA = resp.data || [];
       mountGrid(DATA);
     } catch (e) {
-      if (window.toastr) toastr.error(e?.responseJSON?.message || e.message || 'Order gagal dimuat');
+      toastr.error(e?.responseJSON?.message || e.message || 'Order gagal dimuat');
       if (mount) mount.innerHTML = `<div class="text-rose-600 text-sm">Gagal memuat data</div>`;
+      $('#countBox').text('0');
     }
   }
 
-  // ====== Save fulfill ======
   async function saveFulfill() {
     if (!CURRENT) return;
     if (window.RD?.ui?.overlay) RD.ui.overlay(true);
@@ -330,84 +292,63 @@
 
       if (!resp || !resp.ok) throw new Error(resp?.message || 'Failed');
 
-      if (window.toastr) toastr.success('Saved');
+      toastr.success('Saved');
       hideModal();
       loadOrders();
     } catch (e) {
-      if (window.toastr) toastr.error(e?.responseJSON?.message || e.message || 'Failed');
+      toastr.error(e?.responseJSON?.message || e.message || 'Failed');
     } finally {
       if (window.RD?.ui?.overlay) RD.ui.overlay(false);
     }
   }
 
-  // ====== Bind events (safe bind once per mount) ======
-  function bindEventsOnce() {
-    if (window.__RD_ORDERS_BOUND) return;
-    window.__RD_ORDERS_BOUND = true;
+  function bindEvents() {
+    $(document).off('click', '#btnRefresh').on('click', '#btnRefresh', loadOrders);
 
-    $(document).on('click', '#btnRefresh', loadOrders);
-
-    $(document).on('click', '#btnQuickPending', function () {
+    $(document).off('click', '#btnQuickPending').on('click', '#btnQuickPending', function () {
       $('#pay_status').val('pending');
       $('#fulfill_status').val('');
       loadOrders();
     });
 
-    $(document).on('click', '#btnQuickWaiting', function () {
+    $(document).off('click', '#btnQuickWaiting').on('click', '#btnQuickWaiting', function () {
       $('#fulfill_status').val('waiting');
       $('#pay_status').val('');
       loadOrders();
     });
 
-    $(document).on('keyup', '#q', (window.RD?.util?.debounce ? RD.util.debounce(loadOrders, 350) : loadOrders));
-    $(document).on('change', '#pay_status, #fulfill_status', loadOrders);
+    const deb = window.RD?.util?.debounce ? RD.util.debounce(loadOrders, 350) : loadOrders;
+    $(document).off('keyup', '#q').on('keyup', '#q', deb);
+    $(document).off('change', '#pay_status, #fulfill_status').on('change', '#pay_status, #fulfill_status', loadOrders);
 
-    $(document).on('click', '#saveBtn', saveFulfill);
+    $(document).off('click', '#saveBtn').on('click', '#saveBtn', saveFulfill);
 
-    // modal close
-    $(document).on('click', '#closeModal, #closeModal2, #modalBackdrop', hideModal);
+    $(document).off('click', '#closeModal, #closeModal2, #modalBackdrop')
+      .on('click', '#closeModal, #closeModal2, #modalBackdrop', hideModal);
 
-    // esc close
-    $(document).on('keydown', function (e) {
+    $(document).off('keydown.rdorders').on('keydown.rdorders', function (e) {
       if (e.key === 'Escape' && !$('#modal').hasClass('hidden')) hideModal();
     });
-
-    // rerender on resize (optional)
-    const onResize = (window.RD?.util?.debounce ? RD.util.debounce(function () {
-      // no need rerender, gridjs responsive by CSS
-    }, 120) : function(){});
-    window.addEventListener('resize', onResize);
-    if (window.RD?.router?.onLeave) RD.router.onLeave(() => window.removeEventListener('resize', onResize));
   }
 
-  // ====== Init orders page when injected (SPA) ======
-  async function initOrders() {
-    if (!isOrdersRoute()) return;
-    if (!el('ordersGridMount')) return;
+  return async function () {
+    // hanya kalau halaman orders ada
+    if (!document.querySelector('[data-page="orders"]')) return;
 
-    bindEventsOnce();
+    // bind ulang aman (off/on)
+    bindEvents();
 
-    try {
-      await ensureGridJsLoaded();
-    } catch (e) {
-      if (window.toastr) toastr.error('Gagal memuat Grid.js');
-      return;
+    // init sekali per load script
+    if (!inited) {
+      inited = true;
+      try {
+        await ensureGridJsLoaded();
+      } catch (e) {
+        toastr.error('Gagal memuat Grid.js (CDN terblok)');
+        return;
+      }
     }
 
     await loadOrders();
-  }
-
-  // run now
-  initOrders();
-
-  // observe SPA content changes
-  const content = document.getElementById('admin-content');
-  if (content) {
-    const mo = new MutationObserver(() => initOrders());
-    mo.observe(content, { childList: true, subtree: true });
-  }
-
-  // re-init on hash change
-  window.addEventListener('hashchange', () => initOrders());
-
+  };
 })();
