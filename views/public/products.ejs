@@ -1,49 +1,111 @@
-<div class="flex items-end justify-between gap-3 fade-up">
-  <div>
-    <h2 class="text-2xl font-extrabold">Produk</h2>
-    <p class="text-slate-500 text-sm">Pilih paket chip Royal Dreams sesuai kebutuhan.</p>
+<div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 fade-up" data-aos="fade-up">
+  <div class="min-w-0">
+    <h2 class="text-2xl md:text-3xl font-extrabold leading-tight">Produk</h2>
+    <p class="text-slate-500 text-sm md:text-base mt-1">
+      Pilih paket chip <b class="text-slate-900"><%= settings.site_name || 'Royal Dreams' %></b> sesuai kebutuhan.
+    </p>
   </div>
-  <a href="/#\/checkout" class="btn-primary"><i class="ri-shopping-cart-2-line"></i> Checkout</a>
+
+  <div class="flex gap-2 sm:justify-end">
+    <a href="/#/checkout" class="btn-primary shimmer w-full sm:w-auto justify-center">
+      <i class="ri-shopping-cart-2-line"></i> Checkout
+    </a>
+  </div>
+</div>
+
+<!-- hint -->
+<div class="mt-4 flex flex-wrap gap-2 fade-up" data-aos="fade-up" data-aos-delay="80">
+  <span class="chip"><i class="ri-flashlight-line"></i> Quick Buy → langsung isi checkout</span>
+  <span class="chip"><i class="ri-shield-check-line"></i> Aman • Cepat • Resmi</span>
+  <span class="chip"><i class="ri-pulse-line"></i> Status realtime</span>
 </div>
 
 <div class="mt-5 grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-  <% products.forEach(p => { %>
-    <div class="bg-white border rounded-2xl p-4 shadow-sm hover:shadow transition fade-up">
-      <div class="flex items-center gap-3">
-        <div class="w-14 h-14 rounded-xl bg-slate-100 overflow-hidden flex items-center justify-center">
+  <% if (!products || !products.length) { %>
+    <div class="card fade-up" data-aos="fade-up">
+      <div class="font-extrabold">Belum ada produk</div>
+      <div class="text-sm text-slate-500 mt-1">Silakan tambah produk dari Admin Panel.</div>
+      <div class="mt-4">
+        <a href="/#/home" class="btn-ghost justify-center">
+          <i class="ri-home-5-line"></i> Kembali ke Home
+        </a>
+      </div>
+    </div>
+  <% } %>
+
+  <% products.forEach((p, idx) => { %>
+    <div class="card fade-up" data-aos="fade-up" data-aos-delay="<%= Math.min(360, 60 + idx*60) %>">
+      <div class="flex items-start gap-3">
+        <div class="w-14 h-14 rounded-2xl bg-slate-100 overflow-hidden flex items-center justify-center flex-shrink-0">
           <% if (p.image) { %>
-            <img src="<%= p.image %>" class="w-full h-full object-cover" />
+            <img src="<%= p.image %>" class="w-full h-full object-cover" alt="<%= p.name %>" />
           <% } else { %>
             <i class="ri-gamepad-line text-slate-500 text-2xl"></i>
           <% } %>
         </div>
-        <div class="flex-1">
-          <div class="font-bold"><%= p.name %></div>
-          <div class="text-xs text-slate-500"><%= p.sku %></div>
+
+        <div class="flex-1 min-w-0">
+          <div class="font-extrabold truncate"><%= p.name %></div>
+          <div class="text-xs text-slate-500 truncate">
+            <%= p.sku %><% if (p.game_name) { %> • <%= p.game_name %><% } %>
+          </div>
+
+          <div class="mt-3 flex flex-wrap items-center gap-2">
+            <span class="chip">
+              <i class="ri-price-tag-3-line"></i>
+              <span class="font-extrabold">
+                Rp <%= (p.price_type==='fixed' ? p.price : p.price_per_item) %>
+              </span>
+              <% if (p.price_type !== 'fixed') { %>
+                <span class="opacity-80">/item</span>
+              <% } %>
+            </span>
+
+            <span class="chip">
+              <i class="ri-checkbox-circle-line"></i>
+              <%= p.price_type === 'fixed' ? 'Fixed' : 'Per item' %>
+            </span>
+          </div>
         </div>
       </div>
 
-      <div class="mt-3 flex items-center justify-between">
-        <div>
-          <div class="text-xs text-slate-500">Harga</div>
-          <div class="font-extrabold text-lg">
-            Rp <%= (p.price_type==='fixed' ? p.price : p.price_per_item) %>
-            <span class="text-xs text-slate-500 font-semibold"><%= p.price_type==='fixed' ? '' : '/item' %></span>
-          </div>
-        </div>
-        <button class="btn-ghost js-quickbuy" data-id="<%= p.id %>">
-          <i class="ri-flashlight-line"></i> Quick
+      <div class="mt-4 flex gap-2">
+        <button
+          class="btn-primary shimmer js-quickbuy flex-1 justify-center"
+          type="button"
+          data-id="<%= p.id %>"
+          data-sku="<%= p.sku %>"
+        >
+          <i class="ri-flashlight-line"></i> Quick Buy
         </button>
+
+        <a href="/#/checkout" class="btn-ghost justify-center" title="Buka checkout">
+          <i class="ri-arrow-right-line"></i>
+        </a>
+      </div>
+
+      <div class="mt-3 text-xs text-slate-500">
+        Tip: Pastikan <b>Game ID</b> benar sebelum bayar.
       </div>
     </div>
   <% }) %>
 </div>
 
 <script>
-  // quick select product -> checkout
-  $('.js-quickbuy').on('click', function() {
+  // Quick select product -> checkout (SPA-safe)
+  $(document).off('click.rdQuickBuy').on('click.rdQuickBuy', '.js-quickbuy', function () {
     const id = $(this).data('id');
     window.localStorage.setItem('rd_selected_product', String(id));
-    window.location.hash = '#/checkout';
+
+    // go checkout
+    const target = '#/checkout';
+    if (window.location.hash !== target) {
+      window.location.hash = target;
+    } else {
+      // if already on checkout, force rerender
+      if (typeof window.dispatchEvent === 'function') {
+        window.dispatchEvent(new HashChangeEvent('hashchange'));
+      }
+    }
   });
 </script>
