@@ -4,9 +4,9 @@ const path = require('path');
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
-const MySQLStore = require('connect-mysql2')(session);
 const morgan = require('morgan');
 
+const { pool } = require('./db'); // mysql2/promise pool
 const { buildHelmet, publicLimiter, loginLimiter, bodyLimit, originAllowlist } = require('./middleware/security');
 const { attachSettings } = require('./db/settings');
 
@@ -41,17 +41,112 @@ app.use(cookieParser());
 app.use('/public', express.static(path.join(__dirname, 'public'), { maxAge: '1h' }));
 app.use('/uploads', express.static(path.join(__dirname, process.env.UPLOAD_DIR || 'uploads'), { maxAge: '1h' }));
 
-// ✅ Sessions (MySQL) - gunakan config object (tanpa passing pool)
-const store = new MySQLStore({
-  host: process.env.DB_HOST || '127.0.0.1',
-  port: Number(process.env.DB_PORT || 3306),
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASS || '',
-  database: process.env.DB_NAME || 'royal_dreams',
+/**
+ * ✅ Custom MySQL Session Store (mysql2/promise)
+ * Table: sessions(session_id PK, expires INT, data MEDIUMTEXT)
+ * - expires = unix timestamp (seconds)
+ * - data = JSON string of session object
+ */
+class MySQLSessionStore extends session.Store {
+  /**
+   * @param {{ pool: any, table?: string, cleanupIntervalMs?: number }} opts
+   */
+  constructor(opts) {
+    super();
+    this.pool = opts.pool;
+    this.table = opts.table || 'sessions';
+    this.cleanupIntervalMs = opts.cleanupIntervalMs || 60 * 60 * 1000; // 1 hour
+    this._startCleanup();
+  }
 
-  expiration: 1000 * 60 * 60 * 24 * 7,
-  endConnectionOnClose: false
-});
+  _startCleanup() {
+    // Best-effort cleanup expired sessions
+    setInterval(async () => {
+      try {
+        const now = Math.floor(Date.now() / 1000);
+        await this.pool.execute(`DELETE FROM ${this.table} WHERE expires < ?`, [now]);
+      } catch (_) {
+        // ignore
+      }
+    }, this.cleanupIntervalMs).unref();
+  }
+
+  async get(sid, cb) {
+    try {
+      const [rows] = await this.pool.execute(
+        `SELECT data, expires FROM ${this.table} WHERE session_id = ? LIMIT 1`,
+        [sid]
+      );
+      if (!rows || rows.length === 0) return cb(null, null);
+
+      const row = rows[0];
+      const now = Math.floor(Date.now() / 1000);
+      if (Number(row.expires) < now) {
+        // expired -> delete
+        await this.pool.execute(`DELETE FROM ${this.table} WHERE session_id = ?`, [sid]);
+        return cb(null, null);
+      }
+
+      const sess = JSON.parse(row.data || '{}');
+      return cb(null, sess);
+    } catch (err) {
+      return cb(err);
+    }
+  }
+
+  async set(sid, sess, cb) {
+    try {
+      const json = JSON.stringify(sess || {});
+      const maxAgeMs =
+        sess?.cookie?.maxAge && Number.isFinite(sess.cookie.maxAge)
+          ? Number(sess.cookie.maxAge)
+          : 1000 * 60 * 60 * 24 * 7;
+
+      const expires = Math.floor((Date.now() + maxAgeMs) / 1000);
+
+      await this.pool.execute(
+        `INSERT INTO ${this.table} (session_id, expires, data)
+         VALUES (?, ?, ?)
+         ON DUPLICATE KEY UPDATE expires=VALUES(expires), data=VALUES(data)`,
+        [sid, expires, json]
+      );
+      return cb && cb(null);
+    } catch (err) {
+      return cb && cb(err);
+    }
+  }
+
+  async destroy(sid, cb) {
+    try {
+      await this.pool.execute(`DELETE FROM ${this.table} WHERE session_id = ?`, [sid]);
+      return cb && cb(null);
+    } catch (err) {
+      return cb && cb(err);
+    }
+  }
+
+  async touch(sid, sess, cb) {
+    try {
+      const maxAgeMs =
+        sess?.cookie?.maxAge && Number.isFinite(sess.cookie.maxAge)
+          ? Number(sess.cookie.maxAge)
+          : 1000 * 60 * 60 * 24 * 7;
+
+      const expires = Math.floor((Date.now() + maxAgeMs) / 1000);
+
+      await this.pool.execute(
+        `UPDATE ${this.table} SET expires = ? WHERE session_id = ?`,
+        [expires, sid]
+      );
+      return cb && cb(null);
+    } catch (err) {
+      return cb && cb(err);
+    }
+  }
+}
+
+// ✅ Use custom store
+const store = new MySQLSessionStore({ pool, table: 'sessions' });
 
 app.use(
   session({
