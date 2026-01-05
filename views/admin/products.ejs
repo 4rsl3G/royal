@@ -1,11 +1,11 @@
-<!-- views/admin/products.ejs (Grid.js) -->
+<!-- views/admin/products.ejs (FINAL - NO GridJS, Premium custom table + search + pagination + sticky header) -->
 <div class="fade-up" data-admin-page="products">
   <div class="card card-pad scanline">
     <div class="card-row">
       <div class="min-w-0">
         <div class="pill"><i class="ri-store-2-line"></i> Catalog</div>
         <div class="card-title mt-2">Products</div>
-        <div class="card-sub">CRUD produk + upload image (max 2MB). Klik Edit untuk memuat data ke form.</div>
+        <div class="card-sub">CRUD produk + upload image (max 2MB). Search + pagination ada di kanan.</div>
       </div>
       <div class="flex gap-2 flex-wrap">
         <button class="btn btn-ghost" id="reloadBtnTop"><i class="ri-refresh-line"></i> Reload</button>
@@ -107,43 +107,145 @@
       </div>
     </form>
 
-    <!-- LIST (GRID.JS) -->
+    <!-- LIST -->
     <div class="card card-pad fade-up">
       <div class="card-row">
         <div>
           <div class="font-extrabold text-lg">Product List</div>
-          <div class="text-sm text-slate-500">Cari, sort, pagination. Klik Edit/Del di kolom Action.</div>
+          <div class="text-sm text-slate-500">Search + pagination custom. Klik Edit untuk muat ke form.</div>
         </div>
-        <div class="flex gap-2 flex-wrap">
+
+        <div class="flex gap-2 flex-wrap items-center">
           <button class="btn btn-ghost" id="reloadBtn"><i class="ri-refresh-line"></i></button>
           <div class="pill"><i class="ri-box-3-line"></i> <span id="countBox">0</span> items</div>
         </div>
       </div>
 
-      <div class="mt-3 help">
-        Tip: gunakan search di table. Pagination otomatis.
+      <!-- controls -->
+      <div class="mt-4" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <div style="flex:1;min-width:240px;">
+          <div class="label" style="margin-bottom:6px;">Search</div>
+          <input id="prdSearch" class="input" placeholder="Cari: sku / name / game..." />
+        </div>
+
+        <div style="min-width:170px;">
+          <div class="label" style="margin-bottom:6px;">Per Page</div>
+          <select id="perPage" class="select">
+            <option value="5">5</option>
+            <option value="8" selected>8</option>
+            <option value="10">10</option>
+            <option value="15">15</option>
+          </select>
+        </div>
+
+        <div style="min-width:220px;">
+          <div class="label" style="margin-bottom:6px;">Sort</div>
+          <select id="sortBy" class="select">
+            <option value="sort_order:asc">sort_order (asc)</option>
+            <option value="sort_order:desc">sort_order (desc)</option>
+            <option value="name:asc">name (A-Z)</option>
+            <option value="name:desc">name (Z-A)</option>
+            <option value="sku:asc">sku (A-Z)</option>
+            <option value="sku:desc">sku (Z-A)</option>
+            <option value="created_at:desc">created_at (newest)</option>
+            <option value="created_at:asc">created_at (oldest)</option>
+          </select>
+        </div>
       </div>
 
-      <div class="mt-4 rd-grid-wrap">
-        <div id="productsGrid"></div>
+      <!-- table -->
+      <div class="mt-4 rd-tablebox">
+        <table class="rd-table" style="width:100%;">
+          <thead>
+            <tr>
+              <th style="width:78px;">Img</th>
+              <th>Product</th>
+              <th style="width:120px;">Type</th>
+              <th style="width:160px;">Price</th>
+              <th style="width:150px;">Status</th>
+              <th style="width:90px;">Sort</th>
+              <th style="width:190px;text-align:right;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="prdTbody"></tbody>
+        </table>
       </div>
+
+      <!-- pager -->
+      <div class="mt-4 rd-pager">
+        <button class="btn btn-ghost" id="prevPage"><i class="ri-arrow-left-line"></i> Prev</button>
+        <div class="rd-pager-info" id="pagerInfo">Page 1 / 1</div>
+        <button class="btn btn-ghost" id="nextPage">Next <i class="ri-arrow-right-line"></i></button>
+      </div>
+
+      <div class="mt-3 help" id="hintBox">—</div>
     </div>
   </div>
 </div>
 
-<script>
-// public/products.js (Grid.js + existing CRUD form, FINAL)
-window.RD = window.RD || {};
-RD.pages = RD.pages || {};
+<style>
+/* local-only styling for products table (safe, premium, no third-party) */
+.rd-tablebox{
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.65);
+  border-radius:22px;
+  overflow:auto;
+  max-height:540px;
+  -webkit-overflow-scrolling:touch;
+}
+.rd-table thead th{
+  position:sticky;
+  top:0;
+  z-index:2;
+  background:linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,255,255,.86));
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line2);
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  color:rgba(15,23,42,.65);
+  font-weight:900;
+  padding:12px 12px;
+}
+.rd-table td{
+  padding:12px 12px;
+  border-bottom:1px solid var(--line2);
+  vertical-align:top;
+  font-size:13px;
+}
+.rd-table tr:hover td{
+  background:rgba(248,250,252,.85);
+}
+.rd-imgcell{
+  width:56px;height:56px;border-radius:18px;
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.85);
+  overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 10px 26px rgba(15,23,42,.06);
+}
+.rd-imgcell img{width:100%;height:100%;object-fit:cover;display:block}
+.rd-imgcell--empty i{font-size:22px;color:rgba(100,116,139,.9)}
+.rd-cell-title{font-weight:900;letter-spacing:-.02em;line-height:1.2}
+.rd-cell-sub{margin-top:4px;font-size:12px;color:rgba(100,116,139,1)}
+.rd-cell-money{font-weight:900}
+.rd-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+</style>
 
-RD.pages.products = (function () {
+<script>
+(function(){
+  // prevent double mount on SPA
+  window.RD = window.RD || {};
+  if (window.RD.__productsMountedCustom) return;
+  window.RD.__productsMountedCustom = true;
+
   let DATA = [];
+  let VIEW = []; // filtered + sorted
+  let page = 1;
+  let perPage = 8;
   let CURRENT_IMAGE = null;
-  let grid = null;
-  let mounted = false;
 
   function rupiah(n){ return 'Rp ' + (Number(n||0)).toLocaleString('id-ID'); }
-
   function escapeHtml(s){
     return String(s || '')
       .replaceAll('&','&amp;')
@@ -167,17 +269,6 @@ RD.pages.products = (function () {
     }
   }
 
-  function applyPriceTypeRules(){
-    const t = $('#price_type').val();
-    if(t === 'fixed'){
-      $('#price').prop('disabled', false);
-      $('#price_per_item').prop('disabled', true).val(0);
-    } else {
-      $('#price').prop('disabled', true).val(0);
-      $('#price_per_item').prop('disabled', false);
-    }
-  }
-
   function resetForm(){
     CURRENT_IMAGE = null;
     $('#pid').val('');
@@ -194,9 +285,20 @@ RD.pages.products = (function () {
     applyPriceTypeRules();
   }
 
+  function applyPriceTypeRules(){
+    const t = $('#price_type').val();
+    if(t === 'fixed'){
+      $('#price').prop('disabled', false);
+      $('#price_per_item').prop('disabled', true).val(0);
+    } else {
+      $('#price').prop('disabled', true).val(0);
+      $('#price_per_item').prop('disabled', false);
+    }
+  }
+
   function statusBadge(active){
-    const isOn = String(active) === '1';
-    return isOn
+    const on = String(active) === '1';
+    return on
       ? `<span class="badge good"><i class="ri-check-line"></i> active</span>`
       : `<span class="badge bad"><i class="ri-close-line"></i> inactive</span>`;
   }
@@ -207,100 +309,95 @@ RD.pages.products = (function () {
       : (rupiah(p.price_per_item) + ' /item');
   }
 
-  function buildGridRows(list){
-    return (list || []).map(p => ([
-      gridjs.html(
-        p.image
-          ? `<div class="rd-imgcell"><img src="${escapeHtml(p.image)}" alt="img"/></div>`
-          : `<div class="rd-imgcell rd-imgcell--empty"><i class="ri-image-line"></i></div>`
-      ),
-      gridjs.html(`<div class="rd-cell-title">${escapeHtml(p.name)}</div><div class="rd-cell-sub"><b>${escapeHtml(p.sku)}</b> • ${escapeHtml(p.game_name || 'Royal Dreams')}</div>`),
-      gridjs.html(`<span class="badge info"><i class="ri-price-tag-3-line"></i> ${escapeHtml(p.price_type)}</span>`),
-      gridjs.html(`<div class="rd-cell-money">${escapeHtml(priceText(p))}</div>`),
-      gridjs.html(statusBadge(p.active)),
-      gridjs.html(`<span class="badge"><i class="ri-sort-asc"></i> ${Number(p.sort_order||0)}</span>`),
-      gridjs.html(`
-        <div class="rd-actions">
-          <button class="btn btn-sm js-prd-edit" data-id="${p.id}"><i class="ri-pencil-line"></i> Edit</button>
-          <button class="btn btn-sm btn-danger js-prd-del" data-id="${p.id}"><i class="ri-delete-bin-6-line"></i></button>
-        </div>
-      `)
-    ]));
+  function rowHtml(p){
+    const img = p.image
+      ? `<div class="rd-imgcell"><img src="${escapeHtml(p.image)}" alt="img"></div>`
+      : `<div class="rd-imgcell rd-imgcell--empty"><i class="ri-image-line"></i></div>`;
+
+    return `
+      <tr>
+        <td>${img}</td>
+        <td>
+          <div class="rd-cell-title">${escapeHtml(p.name)}</div>
+          <div class="rd-cell-sub"><b>${escapeHtml(p.sku)}</b> • ${escapeHtml(p.game_name || 'Royal Dreams')}</div>
+        </td>
+        <td><span class="badge info"><i class="ri-price-tag-3-line"></i> ${escapeHtml(p.price_type)}</span></td>
+        <td><div class="rd-cell-money">${escapeHtml(priceText(p))}</div></td>
+        <td>${statusBadge(p.active)}</td>
+        <td><span class="badge"><i class="ri-sort-asc"></i> ${Number(p.sort_order||0)}</span></td>
+        <td style="text-align:right;">
+          <div class="rd-actions">
+            <button class="btn btn-sm js-edit" data-id="${p.id}"><i class="ri-pencil-line"></i> Edit</button>
+            <button class="btn btn-sm btn-danger js-del" data-id="${p.id}"><i class="ri-delete-bin-6-line"></i></button>
+          </div>
+        </td>
+      </tr>
+    `;
   }
 
-  function renderGrid(){
-    const el = document.getElementById('productsGrid');
-    if (!el) return;
+  function getSort(){
+    const v = String($('#sortBy').val() || 'sort_order:asc');
+    const [k, dir] = v.split(':');
+    return { k, dir: (dir === 'desc' ? 'desc' : 'asc') };
+  }
 
-    const rows = buildGridRows(DATA);
+  function normalizeForSearch(p){
+    return [
+      p.id, p.sku, p.name, p.game_name, p.price_type,
+      p.price, p.price_per_item, p.sort_order, p.active
+    ].map(x => String(x ?? '').toLowerCase()).join(' ');
+  }
 
-    if (grid) {
-      grid.updateConfig({ data: rows }).forceRender();
-      return;
+  function rebuildView(){
+    const q = String($('#prdSearch').val() || '').trim().toLowerCase();
+    const { k, dir } = getSort();
+
+    // filter
+    let list = (DATA || []);
+    if (q){
+      list = list.filter(p => normalizeForSearch(p).includes(q));
     }
 
-    grid = new gridjs.Grid({
-      columns: [
-        { name: 'Img', width: '74px' },
-        { name: 'Product', width: '360px' },
-        { name: 'Type', width: '120px' },
-        { name: 'Price', width: '160px' },
-        { name: 'Status', width: '150px' },
-        { name: 'Sort', width: '90px' },
-        { name: 'Action', width: '190px' }
-      ],
-      data: rows,
-      sort: true,
-      search: true,
-      pagination: { enabled: true, limit: 8, summary: true },
-      fixedHeader: true,
-      height: '520px',
-      className: {
-        table: 'rd-grid',
-        th: 'rd-grid-th',
-        td: 'rd-grid-td'
-      },
-      language: {
-        search: { placeholder: 'Cari SKU / Name / Game...' },
-        pagination: {
-          previous: 'Prev',
-          next: 'Next',
-          showing: 'Menampilkan',
-          results: () => 'data'
-        },
-        noRecordsFound: 'Tidak ada produk',
-        error: 'Gagal memuat data'
-      }
+    // sort
+    list = list.slice().sort((a,b) => {
+      const av = (a?.[k] ?? '');
+      const bv = (b?.[k] ?? '');
+      // numeric aware
+      const an = Number(av), bn = Number(bv);
+      let cmp;
+      if (!Number.isNaN(an) && !Number.isNaN(bn)) cmp = an - bn;
+      else cmp = String(av).localeCompare(String(bv), 'id', { sensitivity:'base' });
+      return dir === 'desc' ? -cmp : cmp;
     });
 
-    grid.render(el);
+    VIEW = list;
+    page = 1;
+    render();
   }
 
-  async function load(){
-    $('#countBox').text('0');
-    try {
-      const resp = await $.ajax({
-        method: 'GET',
-        url: window.__ADMIN_BASE + '/api/products',
-        headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
-      });
+  function render(){
+    perPage = Number($('#perPage').val() || 8);
+    const total = VIEW.length;
+    const pages = Math.max(1, Math.ceil(total / perPage));
+    if (page > pages) page = pages;
 
-      if (!resp || resp.ok !== true) throw new Error(resp?.message || 'Failed');
+    const start = (page - 1) * perPage;
+    const slice = VIEW.slice(start, start + perPage);
 
-      DATA = resp.data || [];
-      $('#countBox').text(DATA.length);
-      renderGrid();
-    } catch (e) {
-      toastr.error(e.responseJSON?.message || e.message || 'Failed load products');
-      const el = document.getElementById('productsGrid');
-      if (el) el.innerHTML = `<div class="text-rose-600 text-sm">Error load products</div>`;
-    }
+    $('#prdTbody').html(
+      slice.map(rowHtml).join('') ||
+      `<tr><td colspan="7" style="padding:14px;color:rgba(100,116,139,1);font-weight:700;">No products</td></tr>`
+    );
+
+    $('#countBox').text(DATA.length);
+    $('#pagerInfo').text(`Page ${page} / ${pages}`);
+    $('#hintBox').text(`Menampilkan ${slice.length} dari ${total} hasil (total data: ${DATA.length}).`);
+
+    $('#prevPage').prop('disabled', page <= 1);
+    $('#nextPage').prop('disabled', page >= pages);
   }
 
-  function loadToFormById(id){
-    const p = (DATA || []).find(x => String(x.id) === String(id));
-    if (!p) return;
-
+  function setModeEdit(p){
     $('#pid').val(p.id);
     $('#sku').val(p.sku);
     $('#name').val(p.name);
@@ -324,7 +421,71 @@ RD.pages.products = (function () {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  async function deleteById(id){
+  async function load(){
+    // skeleton rows
+    const sk = Array.from({length:6}).map(() => `
+      <tr>
+        <td colspan="7" style="padding:10px 12px;">
+          <div class="skeleton" style="height:22px;border-radius:14px;"></div>
+        </td>
+      </tr>
+    `).join('');
+    $('#prdTbody').html(sk);
+
+    try {
+      const resp = await $.ajax({
+        method:'GET',
+        url: window.__ADMIN_BASE + '/api/products',
+        headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
+      });
+      if (!resp || resp.ok !== true) throw new Error(resp?.message || 'Failed');
+
+      DATA = resp.data || [];
+      rebuildView();
+    } catch(e) {
+      toastr.error(e.responseJSON?.message || e.message || 'Failed load products');
+      $('#prdTbody').html(`<tr><td colspan="7" style="padding:14px;color:#e11d48;font-weight:800;">Error load products</td></tr>`);
+      $('#hintBox').text('Gagal memuat data.');
+    }
+  }
+
+  // events (namespaced)
+  $(document).off('.prd');
+
+  $(document).on('click.prd', '#reloadBtn, #reloadBtnTop', load);
+  $(document).on('click.prd', '#resetBtn', resetForm);
+  $(document).on('click.prd', '#resetBtnTop', function(){ resetForm(); toastr.info('New product mode'); });
+  $(document).on('click.prd', '#cancelEditBtn', function(){ resetForm(); toastr.info('Edit cancelled'); });
+
+  $(document).on('change.prd', '#price_type', applyPriceTypeRules);
+
+  $(document).on('input.prd', '#prdSearch', function(){
+    if (RD?.util?.debounce) {
+      // avoid rebuilding too often
+    }
+  });
+
+  const debouncedRebuild = (window.RD && RD.util && RD.util.debounce)
+    ? RD.util.debounce(rebuildView, 220)
+    : rebuildView;
+
+  $(document).on('input.prd', '#prdSearch', debouncedRebuild);
+  $(document).on('change.prd', '#perPage, #sortBy', rebuildView);
+
+  $(document).on('click.prd', '#prevPage', function(){ if (page > 1) { page--; render(); } });
+  $(document).on('click.prd', '#nextPage', function(){
+    const pages = Math.max(1, Math.ceil(VIEW.length / (Number($('#perPage').val()||8))));
+    if (page < pages) { page++; render(); }
+  });
+
+  $(document).on('click.prd', '.js-edit', function(){
+    const id = $(this).data('id');
+    const p = (DATA || []).find(x => String(x.id) === String(id));
+    if (p) setModeEdit(p);
+  });
+
+  $(document).on('click.prd', '.js-del', async function(){
+    const id = $(this).data('id');
     if (!confirm('Delete product?')) return;
     RD.ui.overlay(true);
     try {
@@ -337,104 +498,66 @@ RD.pages.products = (function () {
       toastr.success('Deleted');
       if(String($('#pid').val()) === String(id)) resetForm();
       load();
-    } catch (e) {
+    } catch(e) {
       toastr.error(e.responseJSON?.message || e.message || 'Failed');
     } finally {
       RD.ui.overlay(false);
     }
-  }
+  });
 
-  function bindEvents(){
-    if (mounted) return;
-    mounted = true;
-
-    $(document).on('change', '#price_type', applyPriceTypeRules);
-
-    $(document).on('change', '#image', function(){
-      const f = this.files && this.files[0];
-      if(!f){
-        if(CURRENT_IMAGE){
-          $('#imgPreview').html(`<img src="${escapeHtml(CURRENT_IMAGE)}" class="w-full h-full object-cover" />`);
-        } else {
-          $('#imgPreview').html('<i class="ri-image-line" style="font-size:26px;color:rgba(100,116,139,.9)"></i>');
-        }
-        return;
+  $(document).on('change.prd', '#image', function(){
+    const f = this.files && this.files[0];
+    if(!f){
+      if(CURRENT_IMAGE){
+        $('#imgPreview').html(`<img src="${escapeHtml(CURRENT_IMAGE)}" class="w-full h-full object-cover" />`);
+      } else {
+        $('#imgPreview').html('<i class="ri-image-line" style="font-size:26px;color:rgba(100,116,139,.9)"></i>');
       }
-      const url = URL.createObjectURL(f);
-      $('#imgPreview').html(`<img src="${url}" class="w-full h-full object-cover" />`);
-    });
+      return;
+    }
+    const url = URL.createObjectURL(f);
+    $('#imgPreview').html(`<img src="${url}" class="w-full h-full object-cover" />`);
+  });
 
-    $(document).on('click', '#reloadBtn, #reloadBtnTop', function(){ load(); });
+  $(document).on('submit.prd', '#productForm', async function(e){
+    e.preventDefault();
 
-    $(document).on('click', '#resetBtn', function(){ resetForm(); });
+    const id = ($('#pid').val() || '').trim();
+    const fd = new FormData(this);
 
-    $(document).on('click', '#resetBtnTop', function(){
+    const pt = $('#price_type').val();
+    if(pt === 'fixed') fd.set('price_per_item', '0');
+    else fd.set('price', '0');
+
+    RD.ui.overlay(true);
+    try {
+      let url = window.__ADMIN_BASE + '/api/products';
+      let method = 'POST';
+      if (id) { url = window.__ADMIN_BASE + '/api/products/' + encodeURIComponent(id); method = 'PUT'; }
+
+      const resp = await $.ajax({
+        url,
+        method,
+        data: fd,
+        processData: false,
+        contentType: false,
+        headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
+      });
+
+      if (!resp || resp.ok !== true) throw new Error(resp?.message || 'Failed');
+
+      toastr.success('Saved');
       resetForm();
-      toastr.info('New product mode');
-    });
+      load();
+    } catch(e2) {
+      toastr.error(e2.responseJSON?.message || e2.message || 'Failed');
+    } finally {
+      RD.ui.overlay(false);
+    }
+  });
 
-    $(document).on('click', '#cancelEditBtn', function(){
-      resetForm();
-      toastr.info('Edit cancelled');
-    });
-
-    $(document).on('submit', '#productForm', async function(e){
-      e.preventDefault();
-
-      const id = ($('#pid').val() || '').trim();
-      const fd = new FormData(this);
-
-      const pt = $('#price_type').val();
-      if(pt === 'fixed') fd.set('price_per_item', '0');
-      else fd.set('price', '0');
-
-      RD.ui.overlay(true);
-      try {
-        let url = window.__ADMIN_BASE + '/api/products';
-        let method = 'POST';
-        if (id) { url = window.__ADMIN_BASE + '/api/products/' + encodeURIComponent(id); method = 'PUT'; }
-
-        const resp = await $.ajax({
-          url,
-          method,
-          data: fd,
-          processData: false,
-          contentType: false,
-          headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
-        });
-
-        if (!resp || resp.ok !== true) throw new Error(resp?.message || 'Failed');
-
-        toastr.success('Saved');
-        resetForm();
-        load();
-      } catch (e2) {
-        toastr.error(e2.responseJSON?.message || e2.message || 'Failed');
-      } finally {
-        RD.ui.overlay(false);
-      }
-    });
-
-    // Grid action buttons (delegation)
-    $(document).on('click', '.js-prd-edit', function(){
-      loadToFormById($(this).data('id'));
-    });
-
-    $(document).on('click', '.js-prd-del', function(){
-      deleteById($(this).data('id'));
-    });
-  }
-
-  function mount(){
-    bindEvents();
-    resetForm();
-    load();
-  }
-
-  function unmount(){
-    // optional: keep handlers (router SPA) - but prevent duplicate bind by mounted flag
-  }
-
-  return { mount, unmount };
+  // init
+  resetForm();
+  load();
 })();
 </script>
