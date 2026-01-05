@@ -30,7 +30,7 @@
   --ring: 0 0 0 4px rgba(15,23,42,.08);
 
   /* scroll vars */
-  --scrollH: 62vh;
+  --scrollH: min(62vh, 560px);
 }
 
 /* Base */
@@ -50,6 +50,7 @@ a{ color: inherit; text-decoration: none; }
 img{ max-width: 100%; height:auto; display:block; }
 button, input, select, textarea{ font: inherit; }
 table{ border-collapse: collapse; }
+select{ background-image: none; }
 
 /* Subtle animated background (admin) */
 body::before{
@@ -101,6 +102,8 @@ body::before{
 /* =========================================================
    Scroll helpers (IMPORTANT for Orders)
    ========================================================= */
+
+/* Generic scroll container */
 .rd-scroll{
   max-height: var(--scrollH);
   overflow: auto;
@@ -108,11 +111,46 @@ body::before{
   -webkit-overflow-scrolling: touch;
   padding-right: 6px;
 }
-@media (max-width: 900px){
-  :root{ --scrollH: 64vh; }
+
+/* Orders: scroll area inside card */
+.orders-scroll{
+  padding: 12px;
+  max-height: var(--scrollH);
+  overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
-/* sticky table header for custom table (orders etc.) */
+/* keep card header fixed (inside card) */
+.card-head{
+  border-bottom: 1px solid var(--line2);
+}
+
+/* optional: body wrapper for scroll layout */
+.card-body{
+  padding: 0;
+}
+
+/* nice scrollbar (webkit) */
+.orders-scroll::-webkit-scrollbar,
+.rd-scroll::-webkit-scrollbar{
+  width: 10px;
+  height: 10px;
+}
+.orders-scroll::-webkit-scrollbar-thumb,
+.rd-scroll::-webkit-scrollbar-thumb{
+  background: rgba(148,163,184,.35);
+  border-radius: 999px;
+  border: 2px solid rgba(255,255,255,.55);
+}
+.orders-scroll::-webkit-scrollbar-track,
+.rd-scroll::-webkit-scrollbar-track{
+  background: rgba(255,255,255,.35);
+  border-radius: 999px;
+}
+
+/* sticky header for table inside scroll area */
+.orders-scroll .table thead th,
 .rd-table thead th{
   position: sticky;
   top: 0;
@@ -120,6 +158,14 @@ body::before{
   background: rgba(255,255,255,.92);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--line2);
+}
+
+/* Responsive scroll height tuning */
+@media (max-width: 900px){
+  :root{ --scrollH: min(66vh, 620px); }
+}
+@media (max-width: 420px){
+  :root{ --scrollH: min(70vh, 660px); }
 }
 
 /* =========================================================
