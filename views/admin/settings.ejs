@@ -1,0 +1,128 @@
+<div class="fade-up">
+  <h2 class="text-2xl font-extrabold">Settings</h2>
+  <p class="text-slate-500 text-sm">Konfigurasi Midtrans & WhatsApp template.</p>
+</div>
+
+<form id="settingsForm" class="mt-4 bg-white border rounded-2xl p-4 shadow-sm fade-up">
+  <div class="grid gap-3">
+    <div class="grid sm:grid-cols-2 gap-3">
+      <div>
+        <label class="label">Site Name</label>
+        <input class="input" name="site_name" id="site_name" />
+      </div>
+      <div>
+        <label class="label">Brand Tagline</label>
+        <input class="input" name="brand_tagline" id="brand_tagline" />
+      </div>
+    </div>
+
+    <div class="grid sm:grid-cols-3 gap-3">
+      <div>
+        <label class="label">Midtrans Production</label>
+        <select class="input" name="midtrans_is_production" id="midtrans_is_production">
+          <option value="false">false</option>
+          <option value="true">true</option>
+        </select>
+      </div>
+      <div>
+        <label class="label">Midtrans Server Key</label>
+        <input class="input" name="midtrans_server_key" id="midtrans_server_key" placeholder="Isi full key (akan disimpan)" />
+        <div class="hint">Jika sudah ada, input ulang untuk mengganti.</div>
+      </div>
+      <div>
+        <label class="label">Midtrans Client Key</label>
+        <input class="input" name="midtrans_client_key" id="midtrans_client_key" />
+      </div>
+    </div>
+
+    <div class="grid sm:grid-cols-2 gap-3">
+      <div>
+        <label class="label">WhatsApp Enabled</label>
+        <select class="input" name="whatsapp_enabled" id="whatsapp_enabled">
+          <option value="false">false</option>
+          <option value="true">true</option>
+        </select>
+        <div class="hint">Aktifkan lalu pairing di menu WhatsApp.</div>
+      </div>
+      <div class="bg-slate-50 border rounded-xl p-3 text-xs text-slate-600">
+        Placeholder template:
+        <div class="mt-1 font-mono">
+          {order_id} {product} {total} {pay_status} {game_id} {nickname} {admin_note}
+        </div>
+      </div>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-3">
+      <div>
+        <label class="label">Template Pay</label>
+        <textarea class="input" rows="5" name="whatsapp_template_pay" id="whatsapp_template_pay"></textarea>
+      </div>
+      <div>
+        <label class="label">Template Done</label>
+        <textarea class="input" rows="5" name="whatsapp_template_done" id="whatsapp_template_done"></textarea>
+      </div>
+      <div>
+        <label class="label">Template Rejected</label>
+        <textarea class="input" rows="5" name="whatsapp_template_rejected" id="whatsapp_template_rejected"></textarea>
+      </div>
+    </div>
+
+    <button class="btn-primary justify-center" type="submit">
+      <i class="ri-save-3-line"></i> Save Settings
+    </button>
+  </div>
+</form>
+
+<script>
+  async function load(){
+    RD.ui.overlay(true);
+    try {
+      const resp = await $.ajax({
+        method:'GET',
+        url: window.__ADMIN_BASE + '/api/settings',
+        headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
+      });
+      if (!resp.ok) throw new Error('Failed');
+
+      const s = resp.data || {};
+      $('#site_name').val(s.site_name || '');
+      $('#brand_tagline').val(s.brand_tagline || '');
+      $('#midtrans_is_production').val(String(s.midtrans_is_production || 'false'));
+      $('#midtrans_server_key').val(''); // do not auto fill masked
+      $('#midtrans_client_key').val(s.midtrans_client_key || '');
+      $('#whatsapp_enabled').val(String(s.whatsapp_enabled || 'false'));
+
+      $('#whatsapp_template_pay').val(s.whatsapp_template_pay || '');
+      $('#whatsapp_template_done').val(s.whatsapp_template_done || '');
+      $('#whatsapp_template_rejected').val(s.whatsapp_template_rejected || '');
+
+    } catch(e) {
+      toastr.error(e.message || 'Failed load settings');
+    } finally {
+      RD.ui.overlay(false);
+    }
+  }
+
+  $('#settingsForm').on('submit', async function(e){
+    e.preventDefault();
+    RD.ui.overlay(true);
+    try {
+      const data = $(this).serialize();
+      const resp = await $.ajax({
+        method:'POST',
+        url: window.__ADMIN_BASE + '/api/settings',
+        data,
+        headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
+      });
+      if (!resp.ok) throw new Error(resp.message || 'Failed');
+      toastr.success('Saved');
+      load();
+    } catch(e) {
+      toastr.error(e.responseJSON?.message || e.message || 'Failed');
+    } finally {
+      RD.ui.overlay(false);
+    }
+  });
+
+  load();
+</script>
