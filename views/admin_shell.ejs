@@ -1,3 +1,4 @@
+<!-- views/admin_shell.ejs (UPDATED - Grid.js ready + page-script loader vars) -->
 <!doctype html>
 <html lang="id">
 <head>
@@ -16,9 +17,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 
   <link href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" crossorigin="anonymous" referrerpolicy="no-referrer"/>
 
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Grid.js (Cloudflare CDN) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/gridjs/6.2.0/theme/mermaid.min.css" crossorigin="anonymous" referrerpolicy="no-referrer"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gridjs/6.2.0/gridjs.umd.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
   <!-- Admin CSS -->
   <link rel="stylesheet" href="/public/admin.css?v=<%= ASSET_V %>" />
@@ -29,6 +34,7 @@
   <!-- Topbar -->
   <header class="sticky top-0 z-40 bg-white/75 backdrop-blur border-b border-slate-200">
     <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+      <!-- Left / Brand -->
       <div class="flex items-center gap-3 min-w-0">
         <div class="w-11 h-11 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-extrabold shadow-sm">
           RD
@@ -43,6 +49,7 @@
         </div>
       </div>
 
+      <!-- Desktop Nav -->
       <nav class="hidden md:flex items-center gap-2 flex-wrap">
         <a href="<%= adminBasePath %>#/dashboard" class="navbtn" data-nav="dashboard"><i class="ri-dashboard-2-line"></i><span>Dashboard</span></a>
         <a href="<%= adminBasePath %>#/orders" class="navbtn" data-nav="orders"><i class="ri-file-list-3-line"></i><span>Orders</span></a>
@@ -52,6 +59,7 @@
         <a href="<%= adminBasePath %>/logout" class="navbtn navbtn-danger"><i class="ri-logout-box-r-line"></i><span>Logout</span></a>
       </nav>
 
+      <!-- Mobile actions -->
       <div class="md:hidden flex items-center gap-2">
         <a href="<%= adminBasePath %>#/dashboard" class="iconbtn" aria-label="Dashboard">
           <i class="ri-dashboard-2-line"></i>
@@ -115,10 +123,12 @@
     </div>
   </div>
 
+  <!-- Main -->
   <main class="max-w-7xl mx-auto px-4 py-6">
     <div id="admin-content"></div>
   </main>
 
+  <!-- Overlay Loading -->
   <div id="overlay" class="hidden fixed inset-0 z-50 bg-black/30 backdrop-blur-sm">
     <div class="absolute inset-0 flex items-center justify-center">
       <div class="bg-white rounded-2xl px-5 py-4 shadow-lg flex items-center gap-3">
@@ -129,14 +139,15 @@
   </div>
 
   <!-- Scripts -->
-  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
   <script>
     window.__CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     window.__ADMIN_BASE = "<%= adminBasePath %>";
     window.__ASSET_V = "<%= ASSET_V %>";
 
+    // Mobile drawer
     (function(){
       function openDrawer(){ $('#admin-drawer').removeClass('hidden'); }
       function closeDrawer(){ $('#admin-drawer').addClass('hidden'); }
@@ -165,76 +176,7 @@
     })();
   </script>
 
-  <!-- Admin SPA Router -->
+  <!-- Admin JS -->
   <script src="/public/admin.js?v=<%= ASSET_V %>"></script>
-
-  <!-- Orders deps loader: DataTables + order.js ONLY when route is #/orders -->
-  <script>
-    (function(){
-      function loadCssOnce(id, href){
-        if (document.getElementById(id)) return;
-        const l = document.createElement('link');
-        l.id = id;
-        l.rel = 'stylesheet';
-        l.href = href;
-        document.head.appendChild(l);
-      }
-
-      function loadScriptOnce(id, src){
-        if (document.getElementById(id)) return Promise.resolve(true);
-        return new Promise((resolve, reject) => {
-          const s = document.createElement('script');
-          s.id = id;
-          s.src = src;
-          s.defer = true;
-          s.onload = () => resolve(true);
-          s.onerror = () => reject(new Error('Failed to load: ' + src));
-          document.body.appendChild(s);
-        });
-      }
-
-      async function ensureOrdersDeps(){
-        const hash = location.hash || '#/dashboard';
-        if (!hash.startsWith('#/orders')) return;
-
-        const v = encodeURIComponent(window.__ASSET_V || '1');
-
-        // DataTables CSS (cdnjs)
-        loadCssOnce(
-          'dt-css',
-          'https://cdnjs.cloudflare.com/ajax/libs/datatables/1.13.8/css/jquery.dataTables.min.css'
-        );
-
-        // DataTables JS (MUST after jQuery)
-        try{
-          await loadScriptOnce(
-            'dt-js',
-            'https://cdnjs.cloudflare.com/ajax/libs/datatables/1.13.8/js/jquery.dataTables.min.js'
-          );
-        }catch(e){
-          console.error(e);
-          toastr.error('Gagal load DataTables. CDN terblok / network error.');
-          return;
-        }
-
-        // order.js (your logic)
-        try{
-          await loadScriptOnce('rd-orders-js', '/public/order.js?v=' + v);
-        }catch(e1){
-          console.warn(e1);
-          try{
-            await loadScriptOnce('rd-orders-js', '/public/order.js');
-          }catch(e2){
-            console.error(e2);
-            toastr.error('Gagal memuat order.js');
-          }
-        }
-      }
-
-      window.addEventListener('hashchange', ensureOrdersDeps);
-      ensureOrdersDeps();
-    })();
-  </script>
-
 </body>
 </html>
