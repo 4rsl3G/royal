@@ -407,8 +407,9 @@ body::before{
 }
 #toast-container > .toast:before{left:14px!important}
 
-.rd-only-desktop{display:block}
-.rd-only-mobile{display:none}
+/* FIX: NEVER show desktop+mobile together */
+.rd-only-desktop{display:block!important}
+.rd-only-mobile{display:none!important}
 @media (max-width:880px){
   .rd-only-desktop{display:none!important}
   .rd-only-mobile{display:block!important}
@@ -475,100 +476,18 @@ body::before{
   padding-right:6px;
 }
 
-.rd-grid{
-  width:100%;
-  border-collapse:separate!important;
-  border-spacing:0!important;
-}
-.gridjs-container{
-  font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif!important;
-  color:var(--text)!important;
-}
-.gridjs-wrapper,.gridjs-container{
-  border:1px solid var(--line)!important;
-  border-radius:var(--radius)!important;
-  background:rgba(255,255,255,.72)!important;
-  box-shadow:none!important;
-}
-.gridjs-table{
-  width:100%!important;
-}
-.gridjs-th{
-  position:sticky!important;
-  top:0!important;
-  z-index:2!important;
-  background:rgba(255,255,255,.92)!important;
-  backdrop-filter:blur(10px)!important;
-  border-bottom:1px solid var(--line2)!important;
-  font-size:12px!important;
-  text-transform:uppercase!important;
-  letter-spacing:.08em!important;
-  color:rgba(15,23,42,.65)!important;
-  font-weight:900!important;
-  padding:12px 12px!important;
-}
-.gridjs-td{
-  padding:12px 12px!important;
-  border-bottom:1px solid var(--line2)!important;
-  vertical-align:top!important;
-  font-weight:700!important;
-  background:transparent!important;
-}
-.gridjs-tr:hover .gridjs-td{background:rgba(248,250,252,.85)!important}
-.gridjs-footer,.gridjs-head{
-  border-color:var(--line2)!important;
-  background:rgba(255,255,255,.82)!important;
-}
-.gridjs-search input{
-  border-radius:16px!important;
-  border:1px solid var(--line)!important;
-  background:rgba(255,255,255,.90)!important;
-  padding:.65rem .9rem!important;
-  font-weight:800!important;
-  outline:none!important;
-}
-.gridjs-search input:focus{
-  border-color:rgba(37,99,235,.40)!important;
-  box-shadow:var(--ring2)!important;
-}
-.gridjs-pagination{
-  padding:10px 12px!important;
-}
-.gridjs-pagination .gridjs-pages button{
-  border-radius:14px!important;
-  border:1px solid var(--line)!important;
-  background:rgba(255,255,255,.82)!important;
-  font-weight:900!important;
-  transition:transform .16s var(--ease), box-shadow .16s var(--ease), filter .16s var(--ease)!important;
-}
-.gridjs-pagination .gridjs-pages button:hover{
-  transform:translateY(-1px)!important;
-  box-shadow:var(--shadowSoft)!important;
-  filter:saturate(1.06)!important;
-}
-.gridjs-pagination .gridjs-pages button.gridjs-currentPage{
-  background:linear-gradient(135deg, rgba(15,23,42,.98), rgba(17,24,39,.98))!important;
-  color:#fff!important;
-  border-color:rgba(15,23,42,.96)!important;
-}
-.gridjs-pagination .gridjs-summary{
-  color:rgba(100,116,139,1)!important;
-  font-weight:800!important;
-}
-.gridjs-sort{
-  opacity:.75!important;
-}
-
 #modal{
   position:fixed;
   inset:0;
-  z-index:80;
+  z-index:90;
 }
+#modal.hidden{display:none!important}
+
 .rd-modal-backdrop{
   position:absolute;
   inset:0;
   background:rgba(0,0,0,.35);
-  backdrop-filter:blur(8px);
+  backdrop-filter:blur(10px);
   opacity:0;
   transition:opacity .18s var(--ease);
 }
@@ -587,83 +506,35 @@ body::before{
 .rd-modal-card{
   width:min(720px,100%);
   margin-top:6vh;
-  transform:translateY(10px) scale(.985);
-  opacity:0;
-  transition:transform .18s var(--ease2), opacity .18s var(--ease2);
-  will-change:transform,opacity;
   border-radius:26px;
   border:1px solid rgba(255,255,255,.28);
   background:linear-gradient(180deg, rgba(255,255,255,.94), rgba(255,255,255,.86));
-  box-shadow:0 24px 90px rgba(0,0,0,.25);
+  box-shadow:0 28px 110px rgba(0,0,0,.28);
+  transform:translateY(10px) scale(.985);
+  opacity:0;
+  transition:transform .18s var(--ease2), opacity .18s var(--ease2);
   overflow:hidden;
+  will-change:transform,opacity;
 }
 .rd-modal-head{
   padding:16px 18px;
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:10px;
+  gap:12px;
   border-bottom:1px solid var(--line2);
 }
 .rd-modal-body{padding:18px}
+.rd-modal-foot{
+  padding:14px 18px;
+  border-top:1px solid var(--line2);
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+}
 #modal.is-open .rd-modal-backdrop{opacity:1}
 #modal.is-open .rd-modal-card{transform:translateY(0) scale(1);opacity:1}
 body.modal-open{overflow:hidden}
-
-.rd-orders-gridwrap{
-  width:100%;
-  overflow:auto;
-  -webkit-overflow-scrolling:touch;
-  overscroll-behavior:contain;
-  border-radius:18px;
-  border:1px solid var(--line2);
-  background:rgba(255,255,255,.55);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.6);
-}
-
-.rd-orders-gridwrap::-webkit-scrollbar{height:10px}
-.rd-orders-gridwrap::-webkit-scrollbar-thumb{
-  background:rgba(148,163,184,.45);
-  border-radius:999px;
-  border:2px solid rgba(248,250,252,.9);
-}
-
-/* Pastikan grid punya lebar minimum supaya header/kolom tidak “hancur” */
-.rd-orders-gridwrap .gridjs-table{
-  min-width: 980px !important;
-}
-
-/* Header tetap rapi + sticky di area scroll */
-.rd-orders-gridwrap .gridjs-th{
-  white-space:nowrap !important;
-  position:sticky !important;
-  top:0 !important;
-  z-index:3 !important;
-}
-
-/* Sel juga jangan pecah-pecah */
-.rd-orders-gridwrap .gridjs-td{
-  white-space:nowrap !important;
-}
-
-/* Mobile: sembunyikan kolom yang tidak penting biar ga sesak
-   (sesuaikan urutan kolom grid kamu: 1 Order, 2 Produk, 3 Customer, 4 Amount, 5 Pay, 6 Fulfill, 7 Action) */
-@media (max-width: 520px){
-  .rd-orders-gridwrap .gridjs-table{ min-width: 720px !important; }
-
-  /* contoh: sembunyikan Produk (kolom 2) */
-  .rd-orders-gridwrap th:nth-child(2),
-  .rd-orders-gridwrap td:nth-child(2){
-    display:none !important;
-  }
-
-  /* kecilkan padding biar lebih “premium” & rapat */
-  .rd-orders-gridwrap .gridjs-th,
-  .rd-orders-gridwrap .gridjs-td{
-    padding:10px 10px !important;
-    font-size:12.5px !important;
-  }
-}
 
 @media (prefers-reduced-motion:reduce){
   *{animation:none!important;transition:none!important}
@@ -675,111 +546,3 @@ body.modal-open{overflow:hidden}
   .card-pad{padding:16px}
   .table{min-width:780px}
 }
-
-.rd-orders-scroll{
-  max-height: 62vh;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
-  padding-right: 6px;
-}
-
-/* Grid.js premium look */
-.rd-grid-container{
-  border: 1px solid var(--line2) !important;
-  border-radius: 18px !important;
-  overflow: hidden !important;
-  background: rgba(255,255,255,.72) !important;
-}
-
-.rd-grid-table{
-  width: 100% !important;
-  background: transparent !important;
-}
-
-.rd-grid-th{
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 2 !important;
-  background: rgba(255,255,255,.92) !important;
-  backdrop-filter: blur(10px) !important;
-  font-weight: 900 !important;
-  color: rgba(15,23,42,.65) !important;
-  text-transform: uppercase !important;
-  letter-spacing: .08em !important;
-  font-size: 11px !important;
-}
-
-.rd-grid-td{
-  vertical-align: top !important;
-  font-size: 13px !important;
-}
-
-.rd-grid-order{ min-width: 0; }
-.rd-grid-strong{ font-weight: 900; letter-spacing: -.02em; }
-.rd-grid-sub{ margin-top: 4px; font-size: 12px; color: rgba(100,116,139,1); }
-
-.rd-grid-pagination{
-  padding: 10px 10px 2px 10px !important;
-}
-
-.rd-grid-pagination button{
-  border-radius: 14px !important;
-  border: 1px solid var(--line) !important;
-  padding: 8px 10px !important;
-  font-weight: 900 !important;
-}
-
-/* Modal anim + scroll */
-#modal{ position: fixed; inset:0; z-index: 90; }
-#modal.hidden{ display:none !important; }
-
-.rd-modal-backdrop{
-  position:absolute; inset:0;
-  background: rgba(0,0,0,.35);
-  backdrop-filter: blur(10px);
-}
-
-.rd-modal-wrap{
-  position:absolute; inset:0;
-  display:flex;
-  align-items:flex-start;
-  justify-content:center;
-  padding: 16px;
-  overflow:auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-.rd-modal-card{
-  width: min(720px, 100%);
-  margin-top: 6vh;
-  border-radius: 26px;
-  border: 1px solid rgba(255,255,255,.28);
-  background: linear-gradient(180deg, rgba(255,255,255,.94), rgba(255,255,255,.86));
-  box-shadow: 0 28px 110px rgba(0,0,0,.28);
-  transform: translateY(10px) scale(.985);
-  opacity: 0;
-  transition: transform .18s ease, opacity .18s ease;
-  overflow: hidden;
-}
-
-#modal.rd-modal-show .rd-modal-card{ transform: translateY(0) scale(1); opacity: 1; }
-#modal.rd-modal-hide .rd-modal-card{ transform: translateY(10px) scale(.985); opacity: 0; }
-
-.rd-modal-head{
-  padding: 16px 18px;
-  display:flex;
-  align-items:center;
-  justify-content: space-between;
-  gap: 12px;
-  border-bottom: 1px solid var(--line2);
-}
-.rd-modal-body{ padding: 18px; }
-.rd-modal-foot{
-  padding: 14px 18px;
-  border-top: 1px solid var(--line2);
-  display:flex;
-  justify-content:flex-end;
-  gap: 10px;
-}
-body.modal-open{ overflow: hidden; }
