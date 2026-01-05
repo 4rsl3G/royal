@@ -1,20 +1,35 @@
 const bcrypt = require('bcrypt');
 const { q } = require('../db');
 
-async function loginPage(req, res) {
+/**
+ * Helper: render admin views with consistent locals
+ * - settings: site settings
+ * - csrfToken: CSRF token
+ * - adminBasePath: base path from middleware
+ * - admin: session admin
+ */
+async function renderAdmin(req, res, view, locals = {}) {
   const settings = await req.getSettings();
-  res.render('admin/login', {
-    csrfToken: req.csrfToken(),
+  return res.render(view, {
     settings,
-    adminBasePath: req.adminBasePath
+    csrfToken: req.csrfToken(),
+    adminBasePath: req.adminBasePath,
+    admin: req.session.admin || null,
+    ...locals
   });
+}
+
+async function loginPage(req, res) {
+  return renderAdmin(req, res, 'admin/login');
 }
 
 async function login(req, res) {
   const usernameOrEmail = String(req.body.username || '').trim();
   const password = String(req.body.password || '');
 
-  if (!usernameOrEmail || !password) return res.status(400).json({ ok: false, message: 'Lengkapi login' });
+  if (!usernameOrEmail || !password) {
+    return res.status(400).json({ ok: false, message: 'Lengkapi login' });
+  }
 
   const rows = await q(
     `SELECT id, username, email, password_hash, role, is_active
@@ -24,10 +39,14 @@ async function login(req, res) {
   );
 
   const admin = rows[0];
-  if (!admin || !admin.is_active) return res.status(401).json({ ok: false, message: 'Login gagal' });
+  if (!admin || !admin.is_active) {
+    return res.status(401).json({ ok: false, message: 'Login gagal' });
+  }
 
   const ok = await bcrypt.compare(password, admin.password_hash);
-  if (!ok) return res.status(401).json({ ok: false, message: 'Login gagal' });
+  if (!ok) {
+    return res.status(401).json({ ok: false, message: 'Login gagal' });
+  }
 
   req.session.admin = {
     id: admin.id,
@@ -42,39 +61,46 @@ async function login(req, res) {
 }
 
 async function shell(req, res) {
-  const settings = await req.getSettings();
-  res.render('admin_shell', {
-    csrfToken: req.csrfToken(),
-    settings,
-    adminBasePath: req.adminBasePath,
-    admin: req.session.admin
-  });
+  // This is the SPA shell (admin_shell.ejs)
+  return renderAdmin(req, res, 'admin_shell');
 }
 
+/**
+ * Admin SPA partial pages:
+ * IMPORTANT: must include adminBasePath + csrfToken + settings for EJS partials if they reference them.
+ */
 async function dashboard(req, res) {
-  res.render('admin/dashboard', { admin: req.session.admin });
+  return renderAdmin(req, res, 'admin/dashboard');
 }
 
 async function orders(req, res) {
-  res.render('admin/orders', { admin: req.session.admin });
+  return renderAdmin(req, res, 'admin/orders');
 }
 
 async function products(req, res) {
-  res.render('admin/products', { admin: req.session.admin });
+  return renderAdmin(req, res, 'admin/products');
 }
 
 async function settingsPage(req, res) {
-  res.render('admin/settings', { admin: req.session.admin });
+  return renderAdmin(req, res, 'admin/settings');
 }
 
 async function whatsappPage(req, res) {
-  res.render('admin/whatsapp', { admin: req.session.admin });
+  return renderAdmin(req, res, 'admin/whatsapp');
 }
 
 async function logout(req, res) {
-  req.session.destroy(() => {
-    res.redirect(`${req.adminBasePath}/login`);
-  });
+  // destroy session safely
+  try {
+    req.session.destroy(() => {
+      res.clearCookie('rd.sid');
+      return res.redirect(`${req.adminBasePath}/login`);
+    });
+  } catch (e) {
+    // fallback
+    res.clearCookie('rd.sid');
+    return res.redirect(`${req.adminBasePath}/login`);
+  }
 }
 
 module.exports = {
