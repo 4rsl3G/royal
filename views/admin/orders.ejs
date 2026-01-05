@@ -58,8 +58,35 @@
   </div>
 </div>
 
-<!-- TABLE (DataTables) -->
+<!-- PREMIUM STATS -->
 <div class="mt-4 card card-pad fade-up">
+  <div class="card-row">
+    <div class="font-extrabold text-lg">Ringkasan</div>
+    <div class="pill"><i class="ri-pulse-line"></i> Live</div>
+  </div>
+
+  <div class="mt-4 rd-stats">
+    <div class="rd-stat">
+      <div class="rd-stat-label">Total</div>
+      <div class="rd-stat-value" id="statTotal">0</div>
+    </div>
+    <div class="rd-stat">
+      <div class="rd-stat-label">Pending</div>
+      <div class="rd-stat-value" id="statPending">0</div>
+    </div>
+    <div class="rd-stat">
+      <div class="rd-stat-label">Waiting</div>
+      <div class="rd-stat-value" id="statWaiting">0</div>
+    </div>
+    <div class="rd-stat">
+      <div class="rd-stat-label">Done</div>
+      <div class="rd-stat-value" id="statDone">0</div>
+    </div>
+  </div>
+</div>
+
+<!-- DESKTOP TABLE -->
+<div class="mt-4 card card-pad fade-up rd-only-desktop">
   <div class="card-row">
     <div class="font-extrabold text-lg">Orders Table</div>
     <div class="pill"><i class="ri-database-2-line"></i> <span id="countBox">0</span> items</div>
@@ -81,9 +108,26 @@
       <tbody></tbody>
     </table>
   </div>
+</div>
 
-  <div class="mt-3 help">
-    Showing <b>5</b> per page. Gunakan pagination di bawah tabel.
+<!-- MOBILE PREMIUM CARDS (PAGINATED 5) -->
+<div class="mt-4 fade-up rd-only-mobile">
+  <div class="card card-pad">
+    <div class="card-row">
+      <div class="font-extrabold text-lg">Orders</div>
+      <div class="pill"><i class="ri-database-2-line"></i> <span id="countBoxM">0</span> items</div>
+    </div>
+
+    <div class="mt-4" id="mobileCards"></div>
+
+    <div class="mt-3 rd-pager">
+      <button class="btn btn-ghost" id="btnPrev"><i class="ri-arrow-left-line"></i> Prev</button>
+      <div class="rd-pager-info">
+        <div class="text-xs text-slate-500">Page</div>
+        <div class="font-extrabold" id="pageInfo">1 / 1</div>
+      </div>
+      <button class="btn btn-primary shimmer" id="btnNext">Next <i class="ri-arrow-right-line"></i></button>
+    </div>
   </div>
 </div>
 
@@ -167,6 +211,41 @@
     return `<span class="badge">${escapeHtml(st||'-')}</span>`;
   }
 
+  function cardHtml(row){
+    const t = escapeHtml(String(row.created_at||'').replace('T',' ').slice(0,19));
+    return `
+      <div class="rd-order-card">
+        <div class="rd-order-top">
+          <div class="min-w-0">
+            <div class="rd-order-id">${escapeHtml(row.order_id)}</div>
+            <div class="rd-order-time">${t}</div>
+          </div>
+          <button class="btn btn-sm rd-icon-edit js-edit-mobile" data-oid="${escapeHtml(row.order_id)}">
+            <i class="ri-pencil-line"></i>
+          </button>
+        </div>
+
+        <div class="rd-order-product">
+          <div class="rd-order-prodname">${escapeHtml(row.product_name || '-')}</div>
+          <div class="rd-order-meta">qty ${Number(row.qty||0)} • unit ${rupiah(row.unit_price||0)} • total <b>${rupiah(row.gross_amount||0)}</b></div>
+        </div>
+
+        <div class="rd-order-grid">
+          <div class="rd-order-box">
+            <div class="rd-order-label">Customer</div>
+            <div class="rd-order-strong">${escapeHtml(row.game_id || '-')}</div>
+            <div class="rd-order-sub">${escapeHtml(row.nickname || '-')} • ${escapeHtml(row.whatsapp || '-')}</div>
+          </div>
+          <div class="rd-order-box">
+            <div class="rd-order-label">Status</div>
+            <div class="mt-1">${payBadge(row.pay_status)}</div>
+            <div class="mt-2">${fulfillBadge(row.fulfill_status)}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   let DT = null;
   let CURRENT = null;
   let CURRENT_ROW = null;
@@ -182,100 +261,88 @@
     $('#mGross').text(rupiah(row.gross_amount || 0));
 
     $('body').addClass('modal-open');
-    $('#modal').removeClass('hidden');
+    $('#modal').removeClass('hidden').addClass('rd-modal-show');
   }
 
   function closeModal(){
-    // trigger anim close via CSS (#modal.hidden => opacity 0)
-    $('#modal').addClass('hidden');
-    $('body').removeClass('modal-open');
-    CURRENT = null;
-    CURRENT_ROW = null;
+    $('#modal').removeClass('rd-modal-show').addClass('rd-modal-hide');
+    setTimeout(() => {
+      $('#modal').addClass('hidden').removeClass('rd-modal-hide');
+      $('body').removeClass('modal-open');
+      CURRENT = null;
+      CURRENT_ROW = null;
+    }, 180);
   }
 
-  function buildDataTable(){
-    if (DT) { DT.destroy(); $('#ordersTable tbody').empty(); }
-
+  function ensureDT(){
+    if (DT) return;
     DT = $('#ordersTable').DataTable({
       responsive: true,
       autoWidth: false,
       pageLength: 5,
       lengthChange: false,
-      processing: true,
+      searching: false, // kita pakai filter API, bukan search internal DT
+      info: false,
+      paging: true,
+      ordering: true,
       deferRender: true,
       order: [[0, 'desc']],
       language: {
-        info: "Menampilkan _START_ - _END_ dari _TOTAL_ orders",
-        infoEmpty: "Tidak ada data",
         paginate: { previous: "‹", next: "›" },
-        emptyTable: "Tidak ada data",
-        zeroRecords: "Tidak ada data cocok"
+        emptyTable: "Tidak ada data"
       },
       columns: [
-        {
-          data: null,
-          render: function(_, __, row){
-            const t = escapeHtml(String(row.created_at||'').replace('T',' ').slice(0,19));
-            return `
-              <div class="font-extrabold break-anywhere">${escapeHtml(row.order_id)}</div>
-              <div class="text-xs text-slate-500 mt-1">${t}</div>
-            `;
-          }
-        },
-        {
-          data: null,
-          render: function(_, __, row){
-            return `
-              <div class="font-extrabold">${escapeHtml(row.product_name || '-')}</div>
-              <div class="text-xs text-slate-500 mt-1">qty: ${Number(row.qty||0)} • unit: ${rupiah(row.unit_price||0)}</div>
-            `;
-          }
-        },
-        {
-          data: null,
-          render: function(_, __, row){
-            return `
-              <div class="font-extrabold">${escapeHtml(row.game_id || '-')}</div>
-              <div class="text-xs text-slate-500 mt-1">${escapeHtml(row.nickname || '-')} • ${escapeHtml(row.whatsapp || '-')}</div>
-            `;
-          }
-        },
-        {
-          data: "gross_amount",
-          render: function(v){
-            return `<div class="font-extrabold">${rupiah(v||0)}</div>`;
-          }
-        },
-        {
-          data: "pay_status",
-          orderable: false,
-          render: function(v){ return payBadge(v); }
-        },
-        {
-          data: "fulfill_status",
-          orderable: false,
-          render: function(v){ return fulfillBadge(v); }
-        },
-        {
-          data: null,
-          orderable: false,
-          className: "dt-body-right",
-          render: function(_, __, row){
-            const note = escapeHtml(row.admin_note || '');
-            return `
-              <button class="btn btn-sm js-edit"
-                data-oid="${escapeHtml(row.order_id)}"
-                data-pay="${escapeHtml(row.pay_status)}"
-                data-ful="${escapeHtml(row.fulfill_status)}"
-                data-note="${note}"
-                data-gross="${escapeHtml(String(row.gross_amount||0))}">
-                <i class="ri-pencil-line"></i> Edit
-              </button>
-            `;
-          }
-        }
+        { data: "order_id", render: (v, t, row) => {
+          const time = escapeHtml(String(row.created_at||'').replace('T',' ').slice(0,19));
+          return `<div class="font-extrabold break-anywhere">${escapeHtml(v)}</div><div class="text-xs text-slate-500 mt-1">${time}</div>`;
+        }},
+        { data: "product_name", render: (v, t, row) => {
+          return `<div class="font-extrabold">${escapeHtml(v || '-')}</div><div class="text-xs text-slate-500 mt-1">qty: ${Number(row.qty||0)} • unit: ${rupiah(row.unit_price||0)}</div>`;
+        }},
+        { data: "game_id", render: (v, t, row) => {
+          return `<div class="font-extrabold">${escapeHtml(v || '-')}</div><div class="text-xs text-slate-500 mt-1">${escapeHtml(row.nickname||'-')} • ${escapeHtml(row.whatsapp||'-')}</div>`;
+        }},
+        { data: "gross_amount", render: (v)=> `<div class="font-extrabold">${rupiah(v||0)}</div>` },
+        { data: "pay_status", orderable:false, render:(v)=> payBadge(v) },
+        { data: "fulfill_status", orderable:false, render:(v)=> fulfillBadge(v) },
+        { data: null, orderable:false, className:"dt-body-right", render:(_,__,row)=> `
+          <button class="btn btn-sm js-edit" data-oid="${escapeHtml(row.order_id)}">
+            <i class="ri-pencil-line"></i> Edit
+          </button>
+        `}
       ]
     });
+
+    // redraw mobile cards when page changes
+    DT.on('draw', renderMobileFromDT);
+  }
+
+  function setStats(rows){
+    const total = rows.length;
+    const pending = rows.filter(x => String(x.pay_status||'').toLowerCase()==='pending').length;
+    const waiting = rows.filter(x => String(x.fulfill_status||'').toLowerCase()==='waiting').length;
+    const done = rows.filter(x => String(x.fulfill_status||'').toLowerCase()==='done').length;
+
+    $('#statTotal').text(total);
+    $('#statPending').text(pending);
+    $('#statWaiting').text(waiting);
+    $('#statDone').text(done);
+
+    $('#countBox').text(total);
+    $('#countBoxM').text(total);
+  }
+
+  function renderMobileFromDT(){
+    if (!DT) return;
+
+    const info = DT.page.info();
+    $('#pageInfo').text((info.page + 1) + ' / ' + info.pages);
+
+    const pageRows = DT.rows({ page: 'current' }).data().toArray();
+    $('#mobileCards').html(pageRows.map(cardHtml).join('') || `<div class="text-slate-500 text-sm">No data</div>`);
+
+    $('#btnPrev').prop('disabled', info.page <= 0);
+    $('#btnNext').prop('disabled', info.page >= (info.pages - 1));
   }
 
   async function load(){
@@ -285,37 +352,41 @@
       fulfill_status: $('#fulfill_status').val()
     });
 
-    try {
+    try{
       RD.ui.overlay(true);
 
+      const url = window.__ADMIN_BASE + '/api/orders?' + qs;
       const resp = await $.ajax({
         method:'GET',
-        url: window.__ADMIN_BASE + '/api/orders?' + qs,
+        url,
         headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
       });
 
-      if (!resp.ok) throw new Error(resp.message || 'Failed');
+      if (!resp || resp.ok !== true) {
+        // Ini biar ketahuan kenapa 0 items
+        const msg = (resp && resp.message) ? resp.message : 'API /orders tidak mengembalikan ok:true';
+        throw new Error(msg);
+      }
 
-      const data = resp.data || [];
-      $('#countBox').text(data.length);
+      const rows = resp.data || [];
+      setStats(rows);
 
-      if (!DT) buildDataTable();
-
+      ensureDT();
       DT.clear();
-      DT.rows.add(data);
+      DT.rows.add(rows);
       DT.draw();
 
-    } catch(e) {
-      toastr.error(e.message || 'Failed load orders');
-      if (DT){
-        DT.clear().draw();
-      }
-    } finally {
+    }catch(e){
+      toastr.error('Orders gagal dimuat: ' + (e.responseJSON?.message || e.message || 'Unknown'));
+      setStats([]);
+      if (DT){ DT.clear().draw(); }
+      $('#mobileCards').html(`<div class="text-rose-600 text-sm">Error load orders</div>`);
+    }finally{
       RD.ui.overlay(false);
     }
   }
 
-  // EVENTS
+  // Actions
   $('#btnRefresh').on('click', load);
 
   $('#btnQuickPending').on('click', function(){
@@ -330,20 +401,30 @@
     load();
   });
 
-  // search input: pakai debounce dan reload API (biar hasil akurat)
   $('#q').on('keyup', RD.util.debounce(load, 350));
   $('#pay_status, #fulfill_status').on('change', load);
 
-  // edit click: DataTables safe (child row fix)
+  // Desktop edit
   $(document).off('click', '#ordersTable .js-edit').on('click', '#ordersTable .js-edit', function(){
     const oid = String($(this).data('oid') || '');
-    const row = DT.rows().data().toArray().find(x => String(x.order_id) === oid);
+    const row = DT ? DT.rows().data().toArray().find(x => String(x.order_id) === oid) : null;
     if (row) openModalFromRow(row);
   });
 
+  // Mobile edit
+  $(document).off('click', '.js-edit-mobile').on('click', '.js-edit-mobile', function(){
+    const oid = String($(this).data('oid') || '');
+    const row = DT ? DT.rows().data().toArray().find(x => String(x.order_id) === oid) : null;
+    if (row) openModalFromRow(row);
+  });
+
+  // Mobile pager
+  $('#btnPrev').on('click', function(){ if (DT) DT.page('previous').draw('page'); });
+  $('#btnNext').on('click', function(){ if (DT) DT.page('next').draw('page'); });
+
+  // Modal close
   $('#closeModal').on('click', closeModal);
   $('#modal').on('click', (e) => { if (e.target.id==='modal') closeModal(); });
-
   $(document).on('keydown', function(e){
     if (e.key === 'Escape' && !$('#modal').hasClass('hidden')) closeModal();
   });
@@ -372,16 +453,15 @@
     }
   });
 
-  // cleanup when leaving route
   RD.router.onLeave(() => {
     try{
       if (DT){ DT.destroy(); DT = null; }
     }catch(_){}
     $(document).off('click', '#ordersTable .js-edit');
+    $(document).off('click', '.js-edit-mobile');
     $(document).off('keydown');
   });
 
   // boot
-  buildDataTable();
   load();
 </script>
