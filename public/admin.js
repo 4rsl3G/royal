@@ -43,9 +43,7 @@ window.RD = window.RD || {};
 
     // Nice transition effect after load (AOS-ish)
     animateIn($el) {
-      // reset
       $el.css({ opacity: 0, transform: 'translateY(10px)' });
-      // trigger
       setTimeout(() => {
         $el.css({
           opacity: 1,
@@ -60,6 +58,77 @@ window.RD = window.RD || {};
       err(m) { toastr.error(m || 'Terjadi kesalahan'); },
       info(m) { toastr.info(m || ''); },
       warn(m) { toastr.warning(m || ''); }
+    },
+
+    // =========================
+    // Modal helpers (for #modal + rd-modal classes in CSS)
+    // =========================
+    modal: {
+      _lockY: 0,
+      _locked: false,
+
+      _lockBody() {
+        if (this._locked) return;
+        this._locked = true;
+
+        // iOS-friendly scroll lock
+        this._lockY = window.scrollY || window.pageYOffset || 0;
+        document.body.classList.add('modal-open');
+        document.body.style.position = 'fixed';
+        document.body.style.top = `-${this._lockY}px`;
+        document.body.style.left = '0';
+        document.body.style.right = '0';
+        document.body.style.width = '100%';
+      },
+
+      _unlockBody() {
+        if (!this._locked) return;
+        this._locked = false;
+
+        document.body.classList.remove('modal-open');
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.width = '';
+
+        window.scrollTo(0, this._lockY || 0);
+        this._lockY = 0;
+      },
+
+      open(sel = '#modal') {
+        const $m = $(sel);
+        if (!$m.length) return;
+
+        this._lockBody();
+
+        // show element first
+        $m.removeClass('hidden rd-modal-hide').addClass('rd-modal-show');
+
+        // reset scroll container to top (if exists)
+        const wrap = $m.find('.rd-modal-wrap')[0];
+        if (wrap) wrap.scrollTop = 0;
+      },
+
+      close(sel = '#modal') {
+        const $m = $(sel);
+        if (!$m.length) return;
+
+        // play close animation
+        $m.removeClass('rd-modal-show').addClass('rd-modal-hide');
+
+        // after transition end, hide + unlock body
+        // match CSS transition (.18s) with a small buffer
+        setTimeout(() => {
+          $m.addClass('hidden').removeClass('rd-modal-hide');
+          this._unlockBody();
+        }, 220);
+      },
+
+      isOpen(sel = '#modal') {
+        const $m = $(sel);
+        return $m.length && !$m.hasClass('hidden');
+      }
     }
   };
 
@@ -93,15 +162,14 @@ window.RD = window.RD || {};
       const $content = $('#admin-content');
       $content.html(RD.ui.skeletonPage());
 
+      // kalau pindah route saat modal terbuka, tutup rapi
+      if (RD.ui.modal.isOpen('#modal')) RD.ui.modal.close('#modal');
+
       try {
         const html = await $.ajax({ method: 'GET', url });
 
         $content.html(html);
-
-        // Add a tiny class hook so pages can use CSS animations if desired
         $content.addClass('fade-up');
-
-        // Animate on every route render
         RD.ui.animateIn($content);
 
       } catch (e) {
@@ -143,7 +211,6 @@ window.RD = window.RD || {};
     }
 
     function init() {
-      // CSRF attach for mutating requests
       $.ajaxSetup({
         beforeSend: function (xhr, settings) {
           const m = (settings.type || settings.method || 'GET').toUpperCase();
@@ -157,6 +224,15 @@ window.RD = window.RD || {};
 
     return { init, onLeave };
   })();
+
+  // =========================
+  // Global UX: ESC close modal
+  // =========================
+  $(document).on('keydown', function (e) {
+    if (e.key === 'Escape' && RD.ui.modal.isOpen('#modal')) {
+      RD.ui.modal.close('#modal');
+    }
+  });
 
   // =========================
   // Boot
