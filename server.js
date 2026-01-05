@@ -6,8 +6,9 @@ const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const MySQLStore = require('connect-mysql2')(session);
 const morgan = require('morgan');
+const mysql = require('mysql2'); // ✅ ADD INI
 
-const { pool } = require('./db');
+const { pool } = require('./db'); // pool promise untuk query app
 const { buildHelmet, publicLimiter, loginLimiter, bodyLimit, originAllowlist } = require('./middleware/security');
 const { attachSettings } = require('./db/settings');
 
@@ -15,7 +16,7 @@ const publicRoutes = require('./routes/public.routes');
 const apiRoutes = require('./routes/api.routes');
 const adminRoutes = require('./routes/admin.routes');
 const adminApiRoutes = require('./routes/admin.api.routes');
-const webhookRoutes = require('./routes/webhook.routes');
+const webhookRoutes = require('./routes/webhook.routes'); // pastikan ada
 
 const app = express();
 app.disable('x-powered-by');
@@ -41,13 +42,23 @@ app.use(cookieParser());
 app.use('/public', express.static(path.join(__dirname, 'public'), { maxAge: '1h' }));
 app.use('/uploads', express.static(path.join(__dirname, process.env.UPLOAD_DIR || 'uploads'), { maxAge: '1h' }));
 
-// Sessions (MySQL)
+// ✅ Sessions (MySQL) - pakai mysql2 callback pool khusus
+const sessionPool = mysql.createPool({
+  host: process.env.DB_HOST || '127.0.0.1',
+  port: Number(process.env.DB_PORT || 3306),
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASS || '',
+  database: process.env.DB_NAME || 'royal_dreams',
+  connectionLimit: 10,
+  waitForConnections: true
+});
+
 const store = new MySQLStore(
   {
     expiration: 1000 * 60 * 60 * 24 * 7,
     endConnectionOnClose: false
   },
-  pool
+  sessionPool
 );
 
 app.use(
@@ -70,7 +81,7 @@ app.use(
 app.use(express.json({ limit: '300kb' }));
 app.use(express.urlencoded({ extended: true, limit: '300kb' }));
 
-// Attach settings cache helper to req
+// Attach settings cache helper
 app.use(attachSettings);
 
 // Origin allowlist for state-changing requests (except webhook)
