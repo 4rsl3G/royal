@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin - <%= settings.site_name %></title>
+
+  <meta name="csrf-token" content="<%= csrfToken %>" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css"/>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/public/admin.css" />
+</head>
+<body class="font-[Inter] bg-slate-50 text-slate-900">
+  <header class="sticky top-0 z-30 bg-white/80 backdrop-blur border-b">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold">RD</div>
+        <div>
+          <div class="font-bold leading-tight">Admin Panel</div>
+          <div class="text-xs text-slate-500">Login as <b><%= admin.username %></b> (<%= admin.role %>)</div>
+        </div>
+      </div>
+      <nav class="flex items-center gap-1 flex-wrap">
+        <a href="<%= adminBasePath %>#/dashboard" class="navbtn">Dashboard</a>
+        <a href="<%= adminBasePath %>#/orders" class="navbtn">Orders</a>
+        <a href="<%= adminBasePath %>#/products" class="navbtn">Products</a>
+        <a href="<%= adminBasePath %>#/settings" class="navbtn">Settings</a>
+        <a href="<%= adminBasePath %>#/whatsapp" class="navbtn">WhatsApp</a>
+        <a href="<%= adminBasePath %>/logout" class="navbtn text-rose-600">Logout</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-6">
+    <div id="admin-content"></div>
+  </main>
+
+  <div id="overlay" class="hidden fixed inset-0 z-50 bg-black/30 backdrop-blur-sm">
+    <div class="absolute inset-0 flex items-center justify-center">
+      <div class="bg-white rounded-2xl px-5 py-4 shadow-lg flex items-center gap-3">
+        <div class="w-5 h-5 rounded-full border-2 border-slate-300 border-t-slate-900 animate-spin"></div>
+        <div class="text-sm font-semibold">Memproses…</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+  <script>
+    window.__CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    window.__ADMIN_BASE = "<%= adminBasePath %>";
+  </script>
+  <script src="/public/admin.js"></script>
+</body>
+</html>
