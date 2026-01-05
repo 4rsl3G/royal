@@ -41,7 +41,6 @@ function money(n) {
 }
 
 async function metrics(req, res) {
-  // today count/sum, total count/sum, last 14 days chart text
   const today = await q(
     `SELECT COUNT(*) cnt, COALESCE(SUM(gross_amount),0) sum
      FROM orders WHERE DATE(created_at)=CURDATE()`
@@ -154,7 +153,7 @@ async function fulfillOrder(req, res) {
         try {
           await sendWA(od.whatsapp, msg);
           await q(`UPDATE orders SET whatsapp_done_sent_at=NOW() WHERE order_id=?`, [orderId]);
-        } catch (e) {
+        } catch (_) {
           // ignore
         }
       }
@@ -220,7 +219,6 @@ async function updateProduct(req, res) {
   let image = old[0].image;
   if (req.file) {
     image = `/uploads/products/${req.file.filename}`;
-    // delete old file if local
     if (old[0].image && old[0].image.startsWith('/uploads/')) {
       const p = path.join(process.cwd(), old[0].image.replace(/^\//, ''));
       safeUnlink(p);
@@ -257,14 +255,12 @@ async function deleteProduct(req, res) {
 /** SETTINGS GET/POST */
 async function getSettings(req, res) {
   const s = await req.getSettings(true);
-  // hide server key partially
   const out = { ...s };
   if (out.midtrans_server_key) out.midtrans_server_key = out.midtrans_server_key.slice(0, 6) + '***';
   res.json({ ok: true, data: out });
 }
 
 async function saveSettings(req, res) {
-  // allow saving raw keys
   const allowed = [
     'site_name', 'brand_tagline',
     'midtrans_is_production', 'midtrans_server_key', 'midtrans_client_key',
@@ -286,8 +282,20 @@ async function waStart(req, res) {
   const waEnabled = String(settings.whatsapp_enabled || 'false') === 'true';
   if (!waEnabled) return res.status(400).json({ ok: false, message: 'WhatsApp disabled in settings' });
 
-  const st = await startWA();
-  res.json({ ok: true, ...st });
+  // ✅ accept phone for pairing-code flow
+  const rawPhone = cleanStr(req.body.phoneNumber || req.body.phone || req.body.wa_number || '');
+
+  // If provided, validate & normalize to 62xxxx
+  let phoneNumber = '';
+  if (rawPhone) {
+    if (!isValidWhatsapp(rawPhone)) {
+      return res.status(400).json({ ok: false, message: 'Nomor WA tidak valid (gunakan format 62xxxx)' });
+    }
+    phoneNumber = normalizeWhatsapp(rawPhone); // -> 62xxxx
+  }
+
+  const st = await startWA({ phoneNumber: phoneNumber || undefined });
+  return res.json({ ok: true, ...st });
 }
 
 async function waStatus(req, res) {
@@ -304,7 +312,9 @@ async function waTest(req, res) {
   const phone = normalizeWhatsapp(to);
 
   const st = getWAStatus();
-  if (st.status !== 'connected') return res.status(400).json({ ok: false, message: 'WA belum connected' });
+  if (st.status !== 'connected') {
+    return res.status(400).json({ ok: false, message: 'WA belum connected (pairing dulu)' });
+  }
 
   await sendWA(phone, msg);
   res.json({ ok: true });
