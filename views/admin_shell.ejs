@@ -7,7 +7,6 @@
 
   <meta name="csrf-token" content="<%= csrfToken %>" />
 
-  <!-- Cache bust -->
   <%
     const ASSET_V = (settings && settings.assets_version) ? String(settings.assets_version) : '1';
   %>
@@ -21,8 +20,69 @@
 
   <script src="https://cdn.tailwindcss.com"></script>
 
+  <!-- DataTables (Cloudflare cdnjs) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.13.8/css/jquery.dataTables.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/datatables.net-responsive/2.5.0/responsive.dataTables.min.css" />
+
   <!-- Admin CSS -->
   <link rel="stylesheet" href="/public/admin.css?v=<%= ASSET_V %>" />
+
+  <!-- Small DataTables theme glue (biar nyatu sama design kamu) -->
+  <style>
+    /* keep consistent with your glass cards */
+    table.dataTable{ width:100% !important; }
+    .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dataTables_filter{
+      display:none !important; /* kita pakai filter custom di orders.ejs */
+    }
+
+    .dataTables_wrapper .dataTables_info{
+      color: rgba(100,116,139,1) !important;
+      font-weight: 700;
+      padding-top: 10px !important;
+    }
+
+    .dataTables_wrapper .dataTables_paginate{
+      padding-top: 10px !important;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button{
+      border-radius: 14px !important;
+      border: 1px solid rgba(148,163,184,.35) !important;
+      background: rgba(255,255,255,.72) !important;
+      font-weight: 900 !important;
+      color: rgba(15,23,42,.85) !important;
+      margin: 0 4px !important;
+      padding: 8px 12px !important;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button:hover{
+      background: rgba(255,255,255,.95) !important;
+      color: rgba(15,23,42,.95) !important;
+      box-shadow: 0 12px 30px rgba(15,23,42,.08) !important;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current{
+      background: rgba(15,23,42,.96) !important;
+      border-color: rgba(15,23,42,.96) !important;
+      color:#fff !important;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button.disabled{
+      opacity: .5 !important;
+      cursor: not-allowed !important;
+      box-shadow: none !important;
+    }
+
+    /* responsive child row */
+    table.dataTable.dtr-inline.collapsed>tbody>tr>td.dtr-control:before{
+      top: 50% !important;
+      transform: translateY(-50%) !important;
+      border-radius: 999px !important;
+      box-shadow: none !important;
+      background-color: rgba(15,23,42,.88) !important;
+    }
+
+    /* iOS scroll smooth for admin content */
+    #admin-content{ -webkit-overflow-scrolling: touch; }
+  </style>
 </head>
 
 <body class="font-[Inter] bg-slate-50 text-slate-900">
@@ -121,8 +181,8 @@
 
   <!-- Main -->
   <main id="admin-main" class="max-w-7xl mx-auto px-4 py-6">
-  <div id="admin-content"></div>
-</main>
+    <div id="admin-content"></div>
+  </main>
 
   <!-- Overlay Loading -->
   <div id="overlay" class="hidden fixed inset-0 z-50 bg-black/30 backdrop-blur-sm">
@@ -138,6 +198,10 @@
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 
+  <!-- DataTables (Cloudflare cdnjs) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.13.8/jquery.dataTables.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/datatables.net-responsive/2.5.0/dataTables.responsive.min.js"></script>
+
   <script>
     window.__CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     window.__ADMIN_BASE = "<%= adminBasePath %>";
@@ -150,11 +214,7 @@
       $(document).on('click', '#btn-admin-menu', openDrawer);
       $(document).on('click', '#btn-admin-close, #admin-drawer-backdrop', closeDrawer);
 
-      // Make hash links SPA-ish (avoid full reload)
-      $(document).on('click', 'a[href^="' + window.__ADMIN_BASE + '#/"]', function(e){
-        // allow normal navigation but no hard reload
-        // In practice browser won't reload on hash, but some setups do; keep safe:
-        // e.preventDefault(); location.hash = ...; (optional)
+      $(document).on('click', 'a[href^="' + window.__ADMIN_BASE + '#/"]', function(){
         closeDrawer();
       });
 
