@@ -1,80 +1,142 @@
-<div class="fade-up flex flex-col md:flex-row md:items-end md:justify-between gap-3">
-  <div>
-    <h2 class="text-2xl font-extrabold">Orders</h2>
-    <p class="text-slate-500 text-sm">Filter, cari, dan update fulfill status.</p>
-  </div>
+<div class="fade-up">
+  <div class="card card-pad scanline">
+    <div class="card-row">
+      <div class="min-w-0">
+        <div class="pill"><i class="ri-file-list-3-line"></i> Management</div>
+        <div class="card-title mt-2">Orders</div>
+        <div class="card-sub">Filter, cari, dan update fulfill status + catatan admin.</div>
+      </div>
+      <div class="flex gap-2 flex-wrap">
+        <button class="btn btn-ghost" id="btnRefresh"><i class="ri-refresh-line"></i> Refresh</button>
+        <button class="btn btn-primary shimmer" id="btnQuickPending">
+          <i class="ri-time-line"></i> Pending
+        </button>
+        <button class="btn btn-primary shimmer" id="btnQuickWaiting">
+          <i class="ri-hourglass-2-line"></i> Waiting
+        </button>
+      </div>
+    </div>
 
-  <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full md:w-auto">
-    <input id="q" class="input" placeholder="Search: order_id / game_id / wa / product" />
-    <select id="pay_status" class="input">
-      <option value="">pay_status: all</option>
-      <option>pending</option>
-      <option>settlement</option>
-      <option>capture</option>
-      <option>expire</option>
-      <option>cancel</option>
-      <option>deny</option>
-      <option>failure</option>
-    </select>
-    <select id="fulfill_status" class="input">
-      <option value="">fulfill: all</option>
-      <option value="waiting">waiting</option>
-      <option value="processing">processing</option>
-      <option value="done">done</option>
-      <option value="rejected">rejected</option>
-    </select>
+    <div class="mt-4 form-grid">
+      <div class="col-6">
+        <div class="label">Search</div>
+        <input id="q" class="input" placeholder="order_id / game_id / wa / product" />
+      </div>
+
+      <div class="col-3">
+        <div class="label">Pay Status</div>
+        <select id="pay_status" class="select">
+          <option value="">all</option>
+          <option>pending</option>
+          <option>settlement</option>
+          <option>capture</option>
+          <option>expire</option>
+          <option>cancel</option>
+          <option>deny</option>
+          <option>failure</option>
+        </select>
+      </div>
+
+      <div class="col-3">
+        <div class="label">Fulfill</div>
+        <select id="fulfill_status" class="select">
+          <option value="">all</option>
+          <option value="waiting">waiting</option>
+          <option value="processing">processing</option>
+          <option value="done">done</option>
+          <option value="rejected">rejected</option>
+        </select>
+      </div>
+
+      <div class="col-12">
+        <div class="help">
+          Tip: gunakan quick filter “Pending” untuk cek pembayaran, dan “Waiting” untuk antrian proses.
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
-<div class="mt-4 bg-white border rounded-2xl p-4 shadow-sm fade-up overflow-auto">
-  <table class="w-full text-sm">
-    <thead>
-      <tr class="text-left text-slate-500">
-        <th class="py-2 pr-3">Order</th>
-        <th class="py-2 pr-3">Produk</th>
-        <th class="py-2 pr-3">Customer</th>
-        <th class="py-2 pr-3">Amount</th>
-        <th class="py-2 pr-3">Pay</th>
-        <th class="py-2 pr-3">Fulfill</th>
-        <th class="py-2 pr-3"></th>
-      </tr>
-    </thead>
-    <tbody id="tbody"></tbody>
-  </table>
+<!-- DESKTOP TABLE -->
+<div class="mt-4 card card-pad fade-up" id="tableWrap">
+  <div class="card-row">
+    <div class="font-extrabold text-lg">Table</div>
+    <div class="pill"><i class="ri-database-2-line"></i> <span id="countBox">0</span> rows</div>
+  </div>
+
+  <div class="mt-4" style="overflow:auto;">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left text-slate-500">
+          <th class="py-2 pr-3">Order</th>
+          <th class="py-2 pr-3">Produk</th>
+          <th class="py-2 pr-3">Customer</th>
+          <th class="py-2 pr-3">Amount</th>
+          <th class="py-2 pr-3">Pay</th>
+          <th class="py-2 pr-3">Fulfill</th>
+          <th class="py-2 pr-3 text-right">Action</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
 </div>
 
-<!-- modal -->
+<!-- MOBILE CARDS -->
+<div class="mt-4 fade-up" id="cardsWrap" style="display:none;">
+  <div class="card card-pad">
+    <div class="card-row">
+      <div class="font-extrabold text-lg">Orders</div>
+      <div class="pill"><i class="ri-database-2-line"></i> <span id="countBox2">0</span> items</div>
+    </div>
+    <div class="mt-4" id="cardsBox"></div>
+  </div>
+</div>
+
+<!-- MODAL -->
 <div id="modal" class="hidden fixed inset-0 z-50 bg-black/30 backdrop-blur-sm">
   <div class="absolute inset-0 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl w-full max-w-lg border shadow-lg p-5">
-      <div class="flex items-center justify-between">
-        <div class="font-extrabold text-lg">Update Fulfill</div>
-        <button class="btn-ghost" id="closeModal"><i class="ri-close-line"></i></button>
-      </div>
-
-      <div class="mt-3 text-sm">
-        <div class="text-slate-500">Order ID</div>
-        <div class="font-bold" id="mOrderId">-</div>
-      </div>
-
-      <div class="mt-3 grid gap-3">
+    <div class="card card-pad" style="width:100%;max-width:680px;">
+      <div class="card-row">
         <div>
-          <label class="label">Fulfill Status</label>
-          <select id="mFulfill" class="input">
+          <div class="font-extrabold text-lg">Update Fulfill</div>
+          <div class="text-sm text-slate-500">Update status + admin note (dipakai template WA).</div>
+        </div>
+        <button class="btn btn-ghost" id="closeModal"><i class="ri-close-line"></i></button>
+      </div>
+
+      <div class="mt-4 grid md:grid-cols-2 gap-3">
+        <div class="card soft card-pad" style="border-radius:18px;border:1px solid var(--line2);">
+          <div class="text-xs text-slate-500">Order ID</div>
+          <div class="font-extrabold mt-1" id="mOrderId">-</div>
+          <div class="text-xs text-slate-500 mt-2">Pay</div>
+          <div class="mt-1" id="mPayBadge">-</div>
+          <div class="text-xs text-slate-500 mt-2">Gross</div>
+          <div class="font-extrabold mt-1" id="mGross">-</div>
+        </div>
+
+        <div class="card soft card-pad" style="border-radius:18px;border:1px solid var(--line2);">
+          <div class="label">Fulfill Status</div>
+          <select id="mFulfill" class="select">
             <option value="waiting">waiting</option>
             <option value="processing">processing</option>
             <option value="done">done</option>
             <option value="rejected">rejected</option>
           </select>
-        </div>
-        <div>
-          <label class="label">Admin Note</label>
-          <textarea id="mNote" class="input" rows="3" placeholder="Catatan untuk customer (dipakai di template WA)"></textarea>
-        </div>
 
-        <button class="btn-primary justify-center" id="saveBtn">
-          <i class="ri-save-3-line"></i> Simpan
-        </button>
+          <div class="label mt-3">Admin Note</div>
+          <textarea id="mNote" class="textarea" rows="4" placeholder="Catatan untuk customer (dipakai di template WA)"></textarea>
+
+          <div class="mt-3">
+            <button class="btn btn-primary shimmer btn-block" id="saveBtn">
+              <i class="ri-save-3-line"></i> Simpan
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-3 help">
+        Saran: set “processing” saat mulai pengerjaan. “done”/“rejected” akan memicu template WA (jika enabled + connected).
       </div>
     </div>
   </div>
@@ -82,32 +144,142 @@
 
 <script>
   function rupiah(n){ return 'Rp ' + (Number(n||0)).toLocaleString('id-ID'); }
+
+  function escapeHtml(s){
+    return String(s || '')
+      .replaceAll('&','&amp;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;')
+      .replaceAll('"','&quot;')
+      .replaceAll("'",'&#039;');
+  }
+
+  function payBadge(st){
+    st = String(st||'').toLowerCase();
+    if(st === 'settlement' || st === 'capture') return `<span class="badge good"><i class="ri-check-line"></i> ${st}</span>`;
+    if(st === 'pending') return `<span class="badge warn"><i class="ri-time-line"></i> ${st}</span>`;
+    if(st === 'expire' || st === 'cancel' || st === 'deny' || st === 'failure') return `<span class="badge bad"><i class="ri-close-line"></i> ${st}</span>`;
+    return `<span class="badge"><i class="ri-question-line"></i> ${escapeHtml(st || '-')}</span>`;
+  }
+
+  function fulfillBadge(st){
+    st = String(st||'').toLowerCase();
+    if(st === 'done') return `<span class="badge good"><i class="ri-check-double-line"></i> done</span>`;
+    if(st === 'processing') return `<span class="badge info"><i class="ri-loader-4-line"></i> processing</span>`;
+    if(st === 'waiting') return `<span class="badge warn"><i class="ri-hourglass-2-line"></i> waiting</span>`;
+    if(st === 'rejected') return `<span class="badge bad"><i class="ri-close-line"></i> rejected</span>`;
+    return `<span class="badge">${escapeHtml(st||'-')}</span>`;
+  }
+
   let CURRENT = null;
+  let CURRENT_ROW = null;
+  let DATA = [];
 
   function rowHtml(o){
-    return `<tr class="border-t">
-      <td class="py-2 pr-3">
-        <div class="font-semibold">${o.order_id}</div>
-        <div class="text-xs text-slate-500">${String(o.created_at).replace('T',' ').slice(0,19)}</div>
-      </td>
-      <td class="py-2 pr-3">
-        <div class="font-semibold">${o.product_name}</div>
-      </td>
-      <td class="py-2 pr-3">
-        <div class="font-semibold">${o.game_id}</div>
-        <div class="text-xs text-slate-500">${o.whatsapp}</div>
-      </td>
-      <td class="py-2 pr-3">
-        <div class="font-bold">${rupiah(o.gross_amount)}</div>
-      </td>
-      <td class="py-2 pr-3"><span class="pill">${o.pay_status}</span></td>
-      <td class="py-2 pr-3"><span class="pill">${o.fulfill_status}</span></td>
-      <td class="py-2 pr-3 text-right">
-        <button class="btn-ghost js-edit" data-oid="${o.order_id}" data-ful="${o.fulfill_status}" data-note="${(o.admin_note||'').replaceAll('"','&quot;')}">
-          <i class="ri-pencil-line"></i>
-        </button>
-      </td>
-    </tr>`;
+    const note = escapeHtml(o.admin_note || '');
+    return `
+      <tr class="border-t">
+        <td class="py-2 pr-3">
+          <div class="font-extrabold">${escapeHtml(o.order_id)}</div>
+          <div class="text-xs text-slate-500">${escapeHtml(String(o.created_at).replace('T',' ').slice(0,19))}</div>
+        </td>
+        <td class="py-2 pr-3">
+          <div class="font-extrabold">${escapeHtml(o.product_name)}</div>
+          <div class="text-xs text-slate-500">qty: ${Number(o.qty||0)} • unit: ${rupiah(o.unit_price||0)}</div>
+        </td>
+        <td class="py-2 pr-3">
+          <div class="font-extrabold">${escapeHtml(o.game_id)}</div>
+          <div class="text-xs text-slate-500">${escapeHtml(o.nickname || '-')} • ${escapeHtml(o.whatsapp || '-')}</div>
+        </td>
+        <td class="py-2 pr-3">
+          <div class="font-extrabold">${rupiah(o.gross_amount)}</div>
+        </td>
+        <td class="py-2 pr-3">${payBadge(o.pay_status)}</td>
+        <td class="py-2 pr-3">${fulfillBadge(o.fulfill_status)}</td>
+        <td class="py-2 pr-3 text-right">
+          <button class="btn btn-sm js-edit"
+            data-oid="${escapeHtml(o.order_id)}"
+            data-pay="${escapeHtml(o.pay_status)}"
+            data-ful="${escapeHtml(o.fulfill_status)}"
+            data-note="${note}"
+            data-gross="${escapeHtml(String(o.gross_amount||0))}">
+            <i class="ri-pencil-line"></i> Edit
+          </button>
+        </td>
+      </tr>
+    `;
+  }
+
+  function cardHtml(o){
+    const note = escapeHtml(o.admin_note || '');
+    return `
+      <div class="card soft" style="border-radius:22px;border:1px solid var(--line2);padding:12px;margin-bottom:12px;">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <div class="font-extrabold truncate">${escapeHtml(o.order_id)}</div>
+            <div class="text-xs text-slate-500 mt-1">${escapeHtml(String(o.created_at).replace('T',' ').slice(0,19))}</div>
+          </div>
+          <button class="btn btn-sm js-edit"
+            data-oid="${escapeHtml(o.order_id)}"
+            data-pay="${escapeHtml(o.pay_status)}"
+            data-ful="${escapeHtml(o.fulfill_status)}"
+            data-note="${note}"
+            data-gross="${escapeHtml(String(o.gross_amount||0))}">
+            <i class="ri-pencil-line"></i>
+          </button>
+        </div>
+
+        <div class="mt-3">
+          <div class="text-sm font-extrabold">${escapeHtml(o.product_name)}</div>
+          <div class="text-xs text-slate-500">qty ${Number(o.qty||0)} • unit ${rupiah(o.unit_price||0)} • total <b>${rupiah(o.gross_amount||0)}</b></div>
+        </div>
+
+        <div class="mt-3 grid grid-cols-2 gap-2">
+          <div class="card soft" style="border-radius:18px;border:1px solid var(--line2);padding:10px;">
+            <div class="text-xs text-slate-500">Customer</div>
+            <div class="font-extrabold truncate">${escapeHtml(o.game_id)}</div>
+            <div class="text-xs text-slate-500 truncate">${escapeHtml(o.nickname || '-')} • ${escapeHtml(o.whatsapp || '-')}</div>
+          </div>
+          <div class="card soft" style="border-radius:18px;border:1px solid var(--line2);padding:10px;">
+            <div class="text-xs text-slate-500">Status</div>
+            <div class="mt-1">${payBadge(o.pay_status)}</div>
+            <div class="mt-2">${fulfillBadge(o.fulfill_status)}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function openModalFromData(data){
+    CURRENT = data.oid;
+    CURRENT_ROW = data;
+    $('#mOrderId').text(CURRENT);
+    $('#mFulfill').val(data.ful || 'waiting');
+    $('#mNote').val(data.note || '');
+    $('#mPayBadge').html(payBadge(data.pay || '-'));
+    $('#mGross').text(rupiah(data.gross || 0));
+    $('#modal').removeClass('hidden');
+  }
+
+  function closeModal(){
+    $('#modal').addClass('hidden');
+    CURRENT = null;
+    CURRENT_ROW = null;
+  }
+
+  function renderResponsive(data){
+    const isMobile = window.matchMedia && window.matchMedia('(max-width: 880px)').matches;
+    if(isMobile){
+      $('#tableWrap').hide();
+      $('#cardsWrap').show();
+      $('#countBox2').text(data.length);
+      $('#cardsBox').html(data.map(cardHtml).join('') || `<div class="text-slate-500 text-sm">No data</div>`);
+    } else {
+      $('#cardsWrap').hide();
+      $('#tableWrap').show();
+      $('#countBox').text(data.length);
+      $('#tbody').html(data.map(rowHtml).join('') || `<tr><td class="py-3 text-slate-500" colspan="7">No data</td></tr>`);
+    }
   }
 
   async function load(){
@@ -116,7 +288,10 @@
       pay_status: $('#pay_status').val(),
       fulfill_status: $('#fulfill_status').val()
     });
-    RD.ui.skeleton('#tbody', 6);
+
+    // skeleton
+    $('#cardsBox').html(RD.ui.skeletonBlocks(6));
+    RD.ui.skeletonTableRows('#tbody', 7, 7);
 
     try {
       const resp = await $.ajax({
@@ -126,27 +301,48 @@
       });
       if (!resp.ok) throw new Error('Failed');
 
-      $('#tbody').html((resp.data||[]).map(rowHtml).join('') || `<tr><td class="py-3 text-slate-500" colspan="7">No data</td></tr>`);
-
-      $('.js-edit').on('click', function(){
-        CURRENT = $(this).data('oid');
-        $('#mOrderId').text(CURRENT);
-        $('#mFulfill').val($(this).data('ful'));
-        $('#mNote').val($(this).data('note'));
-        $('#modal').removeClass('hidden');
-      });
+      DATA = resp.data || [];
+      renderResponsive(DATA);
 
     } catch(e) {
       toastr.error(e.message || 'Failed load orders');
       $('#tbody').html(`<tr><td class="py-3 text-rose-600" colspan="7">Error</td></tr>`);
+      $('#cardsBox').html(`<div class="text-rose-600 text-sm">Error</div>`);
     }
   }
+
+  // events
+  $('#btnRefresh').on('click', load);
+
+  $('#btnQuickPending').on('click', function(){
+    $('#pay_status').val('pending');
+    $('#fulfill_status').val('');
+    load();
+  });
+
+  $('#btnQuickWaiting').on('click', function(){
+    $('#fulfill_status').val('waiting');
+    $('#pay_status').val('');
+    load();
+  });
 
   $('#q').on('keyup', RD.util.debounce(load, 400));
   $('#pay_status, #fulfill_status').on('change', load);
 
-  $('#closeModal').on('click', () => $('#modal').addClass('hidden'));
-  $('#modal').on('click', (e) => { if (e.target.id==='modal') $('#modal').addClass('hidden'); });
+  // delegated edit (works for table + cards)
+  $(document).off('click', '.js-edit').on('click', '.js-edit', function(){
+    const data = {
+      oid: String($(this).data('oid') || ''),
+      pay: String($(this).data('pay') || ''),
+      ful: String($(this).data('ful') || ''),
+      note: String($(this).data('note') || ''),
+      gross: String($(this).data('gross') || '0')
+    };
+    openModalFromData(data);
+  });
+
+  $('#closeModal').on('click', closeModal);
+  $('#modal').on('click', (e) => { if (e.target.id==='modal') closeModal(); });
 
   $('#saveBtn').on('click', async function(){
     if (!CURRENT) return;
@@ -155,12 +351,15 @@
       const resp = await $.ajax({
         method:'POST',
         url: window.__ADMIN_BASE + '/api/orders/' + encodeURIComponent(CURRENT) + '/fulfill',
-        data: { fulfill_status: $('#mFulfill').val(), admin_note: $('#mNote').val() },
+        data: {
+          fulfill_status: $('#mFulfill').val(),
+          admin_note: $('#mNote').val()
+        },
         headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
       });
       if (!resp.ok) throw new Error(resp.message || 'Failed');
       toastr.success('Saved');
-      $('#modal').addClass('hidden');
+      closeModal();
       load();
     } catch(e) {
       toastr.error(e.responseJSON?.message || e.message || 'Failed');
@@ -168,6 +367,13 @@
       RD.ui.overlay(false);
     }
   });
+
+  // rerender on resize (for responsive switch)
+  const onResize = RD.util.debounce(function(){
+    renderResponsive(DATA || []);
+  }, 120);
+  window.addEventListener('resize', onResize);
+  RD.router.onLeave(() => window.removeEventListener('resize', onResize));
 
   load();
 </script>
