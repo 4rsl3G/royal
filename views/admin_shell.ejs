@@ -16,7 +16,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 
   <link href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.13.8/css/jquery.dataTables.min.css"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css"/>
 
   <script src="https://cdn.tailwindcss.com"></script>
@@ -133,21 +132,21 @@
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 
-  <!-- DataTables (CDNJS / Cloudflare) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.13.8/jquery.dataTables.min.js"></script>
-
   <script>
     window.__CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     window.__ADMIN_BASE = "<%= adminBasePath %>";
     window.__ASSET_V = "<%= ASSET_V %>";
 
-    // Mobile drawer
     (function(){
       function openDrawer(){ $('#admin-drawer').removeClass('hidden'); }
       function closeDrawer(){ $('#admin-drawer').addClass('hidden'); }
 
       $(document).on('click', '#btn-admin-menu', openDrawer);
       $(document).on('click', '#btn-admin-close, #admin-drawer-backdrop', closeDrawer);
+
+      $(document).on('click', 'a[href^="' + window.__ADMIN_BASE + '#/"]', function(){
+        closeDrawer();
+      });
 
       function setActive(){
         const hash = location.hash || '#/dashboard';
@@ -164,41 +163,78 @@
       window.addEventListener('hashchange', setActive);
       setActive();
     })();
+  </script>
 
-    // Per-route script loader (ONLY load order.js on orders page)
+  <!-- Admin SPA Router -->
+  <script src="/public/admin.js?v=<%= ASSET_V %>"></script>
+
+  <!-- Orders deps loader: DataTables + order.js ONLY when route is #/orders -->
+  <script>
     (function(){
+      function loadCssOnce(id, href){
+        if (document.getElementById(id)) return;
+        const l = document.createElement('link');
+        l.id = id;
+        l.rel = 'stylesheet';
+        l.href = href;
+        document.head.appendChild(l);
+      }
+
       function loadScriptOnce(id, src){
         if (document.getElementById(id)) return Promise.resolve(true);
         return new Promise((resolve, reject) => {
           const s = document.createElement('script');
           s.id = id;
           s.src = src;
-          s.async = true;
+          s.defer = true;
           s.onload = () => resolve(true);
           s.onerror = () => reject(new Error('Failed to load: ' + src));
           document.body.appendChild(s);
         });
       }
 
-      async function ensureRouteScripts(){
+      async function ensureOrdersDeps(){
         const hash = location.hash || '#/dashboard';
-        if (hash.startsWith('#/orders')) {
+        if (!hash.startsWith('#/orders')) return;
+
+        const v = encodeURIComponent(window.__ASSET_V || '1');
+
+        // DataTables CSS (cdnjs)
+        loadCssOnce(
+          'dt-css',
+          'https://cdnjs.cloudflare.com/ajax/libs/datatables/1.13.8/css/jquery.dataTables.min.css'
+        );
+
+        // DataTables JS (MUST after jQuery)
+        try{
+          await loadScriptOnce(
+            'dt-js',
+            'https://cdnjs.cloudflare.com/ajax/libs/datatables/1.13.8/js/jquery.dataTables.min.js'
+          );
+        }catch(e){
+          console.error(e);
+          toastr.error('Gagal load DataTables. CDN terblok / network error.');
+          return;
+        }
+
+        // order.js (your logic)
+        try{
+          await loadScriptOnce('rd-orders-js', '/public/order.js?v=' + v);
+        }catch(e1){
+          console.warn(e1);
           try{
-            await loadScriptOnce('rd-orders-js', '/public/order.js?v=' + encodeURIComponent(window.__ASSET_V || '1'));
-          } catch(e){
-            console.error(e);
+            await loadScriptOnce('rd-orders-js', '/public/order.js');
+          }catch(e2){
+            console.error(e2);
             toastr.error('Gagal memuat order.js');
           }
         }
       }
 
-      window.addEventListener('hashchange', ensureRouteScripts);
-      // first load
-      ensureRouteScripts();
+      window.addEventListener('hashchange', ensureOrdersDeps);
+      ensureOrdersDeps();
     })();
   </script>
 
-  <!-- Admin JS (router) -->
-  <script src="/public/admin.js?v=<%= ASSET_V %>"></script>
 </body>
 </html>
