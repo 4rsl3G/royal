@@ -610,6 +610,61 @@ body::before{
 #modal.is-open .rd-modal-card{transform:translateY(0) scale(1);opacity:1}
 body.modal-open{overflow:hidden}
 
+.rd-orders-gridwrap{
+  width:100%;
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+  border-radius:18px;
+  border:1px solid var(--line2);
+  background:rgba(255,255,255,.55);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.6);
+}
+
+.rd-orders-gridwrap::-webkit-scrollbar{height:10px}
+.rd-orders-gridwrap::-webkit-scrollbar-thumb{
+  background:rgba(148,163,184,.45);
+  border-radius:999px;
+  border:2px solid rgba(248,250,252,.9);
+}
+
+/* Pastikan grid punya lebar minimum supaya header/kolom tidak “hancur” */
+.rd-orders-gridwrap .gridjs-table{
+  min-width: 980px !important;
+}
+
+/* Header tetap rapi + sticky di area scroll */
+.rd-orders-gridwrap .gridjs-th{
+  white-space:nowrap !important;
+  position:sticky !important;
+  top:0 !important;
+  z-index:3 !important;
+}
+
+/* Sel juga jangan pecah-pecah */
+.rd-orders-gridwrap .gridjs-td{
+  white-space:nowrap !important;
+}
+
+/* Mobile: sembunyikan kolom yang tidak penting biar ga sesak
+   (sesuaikan urutan kolom grid kamu: 1 Order, 2 Produk, 3 Customer, 4 Amount, 5 Pay, 6 Fulfill, 7 Action) */
+@media (max-width: 520px){
+  .rd-orders-gridwrap .gridjs-table{ min-width: 720px !important; }
+
+  /* contoh: sembunyikan Produk (kolom 2) */
+  .rd-orders-gridwrap th:nth-child(2),
+  .rd-orders-gridwrap td:nth-child(2){
+    display:none !important;
+  }
+
+  /* kecilkan padding biar lebih “premium” & rapat */
+  .rd-orders-gridwrap .gridjs-th,
+  .rd-orders-gridwrap .gridjs-td{
+    padding:10px 10px !important;
+    font-size:12.5px !important;
+  }
+}
+
 @media (prefers-reduced-motion:reduce){
   *{animation:none!important;transition:none!important}
 }
