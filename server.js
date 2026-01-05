@@ -6,9 +6,7 @@ const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const MySQLStore = require('connect-mysql2')(session);
 const morgan = require('morgan');
-const mysql = require('mysql2'); // ✅ ADD INI
 
-const { pool } = require('./db'); // pool promise untuk query app
 const { buildHelmet, publicLimiter, loginLimiter, bodyLimit, originAllowlist } = require('./middleware/security');
 const { attachSettings } = require('./db/settings');
 
@@ -16,12 +14,13 @@ const publicRoutes = require('./routes/public.routes');
 const apiRoutes = require('./routes/api.routes');
 const adminRoutes = require('./routes/admin.routes');
 const adminApiRoutes = require('./routes/admin.api.routes');
-const webhookRoutes = require('./routes/webhook.routes'); // pastikan ada
+const webhookRoutes = require('./routes/webhook.routes');
 
 const app = express();
 app.disable('x-powered-by');
 
 const PORT = process.env.PORT || 3000;
+
 const ADMIN_BASE_PATH = (process.env.ADMIN_BASE_PATH || '/admin').startsWith('/')
   ? process.env.ADMIN_BASE_PATH
   : `/${process.env.ADMIN_BASE_PATH}`;
@@ -42,24 +41,17 @@ app.use(cookieParser());
 app.use('/public', express.static(path.join(__dirname, 'public'), { maxAge: '1h' }));
 app.use('/uploads', express.static(path.join(__dirname, process.env.UPLOAD_DIR || 'uploads'), { maxAge: '1h' }));
 
-// ✅ Sessions (MySQL) - pakai mysql2 callback pool khusus
-const sessionPool = mysql.createPool({
+// ✅ Sessions (MySQL) - gunakan config object (tanpa passing pool)
+const store = new MySQLStore({
   host: process.env.DB_HOST || '127.0.0.1',
   port: Number(process.env.DB_PORT || 3306),
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASS || '',
   database: process.env.DB_NAME || 'royal_dreams',
-  connectionLimit: 10,
-  waitForConnections: true
-});
 
-const store = new MySQLStore(
-  {
-    expiration: 1000 * 60 * 60 * 24 * 7,
-    endConnectionOnClose: false
-  },
-  sessionPool
-);
+  expiration: 1000 * 60 * 60 * 24 * 7,
+  endConnectionOnClose: false
+});
 
 app.use(
   session({
@@ -110,9 +102,11 @@ app.use((err, req, res, next) => {
   }
   console.error(err);
   const status = err.status || 500;
+
   if (req.path.startsWith('/api') || req.path.includes('/api/')) {
     return res.status(status).json({ ok: false, message: err.message || 'Server error' });
   }
+
   return res.status(status).send('Server error');
 });
 
