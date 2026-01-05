@@ -1,0 +1,440 @@
+<!-- views/admin/products.ejs (Grid.js) -->
+<div class="fade-up" data-admin-page="products">
+  <div class="card card-pad scanline">
+    <div class="card-row">
+      <div class="min-w-0">
+        <div class="pill"><i class="ri-store-2-line"></i> Catalog</div>
+        <div class="card-title mt-2">Products</div>
+        <div class="card-sub">CRUD produk + upload image (max 2MB). Klik Edit untuk memuat data ke form.</div>
+      </div>
+      <div class="flex gap-2 flex-wrap">
+        <button class="btn btn-ghost" id="reloadBtnTop"><i class="ri-refresh-line"></i> Reload</button>
+        <button class="btn btn-primary shimmer" id="resetBtnTop"><i class="ri-add-line"></i> New Product</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4 grid lg:grid-cols-2 gap-4">
+    <!-- FORM -->
+    <form id="productForm" class="card card-pad fade-up" enctype="multipart/form-data">
+      <div class="card-row">
+        <div>
+          <div class="font-extrabold text-lg" id="formTitle">Create Product</div>
+          <div class="text-sm text-slate-500" id="formHint">Isi data lalu klik Save.</div>
+        </div>
+        <span class="badge info" id="modeBadge"><i class="ri-add-circle-line"></i> create</span>
+      </div>
+
+      <input type="hidden" name="id" id="pid" />
+
+      <div class="mt-4 form-grid">
+        <div class="col-6">
+          <div class="label">SKU</div>
+          <input name="sku" id="sku" class="input" required placeholder="RD-CHIP-100" />
+        </div>
+
+        <div class="col-6">
+          <div class="label">Sort Order</div>
+          <input name="sort_order" id="sort_order" type="number" class="input" value="0" />
+          <div class="help">Semakin kecil → semakin atas.</div>
+        </div>
+
+        <div class="col-12">
+          <div class="label">Name</div>
+          <input name="name" id="name" class="input" required placeholder="Chip 100.000" />
+        </div>
+
+        <div class="col-12">
+          <div class="label">Game Name</div>
+          <input name="game_name" id="game_name" class="input" value="Royal Dreams" />
+        </div>
+
+        <div class="col-6">
+          <div class="label">Price Type</div>
+          <select name="price_type" id="price_type" class="select">
+            <option value="fixed">fixed</option>
+            <option value="per_item">per_item</option>
+          </select>
+          <div class="help">fixed = qty dipaksa 1. per_item = qty menentukan total.</div>
+        </div>
+
+        <div class="col-6">
+          <div class="label">Active</div>
+          <select name="active" id="active" class="select">
+            <option value="1">1 (active)</option>
+            <option value="0">0 (inactive)</option>
+          </select>
+        </div>
+
+        <div class="col-6">
+          <div class="label">Price (fixed)</div>
+          <input name="price" id="price" type="number" class="input" value="0" />
+        </div>
+
+        <div class="col-6">
+          <div class="label">Price per item</div>
+          <input name="price_per_item" id="price_per_item" type="number" class="input" value="0" />
+        </div>
+
+        <div class="col-12">
+          <div class="label">Image</div>
+          <div class="card soft card-pad" style="border-radius:18px;border:1px solid var(--line2);">
+            <div class="flex items-center gap-3 flex-wrap">
+              <div id="imgPreview" class="scanline" style="width:72px;height:72px;border-radius:20px;border:1px solid var(--line);background:rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center;overflow:hidden;">
+                <i class="ri-image-line" style="font-size:26px;color:rgba(100,116,139,.9)"></i>
+              </div>
+              <div style="flex:1;min-width:220px;">
+                <input name="image" id="image" type="file" accept="image/png,image/jpeg,image/jpg,image/webp" class="input" />
+                <div class="help">Max 2MB (png/jpg/jpeg/webp). Upload hanya jika mau ganti.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 flex gap-2 flex-wrap">
+          <button class="btn btn-primary shimmer btn-block" type="submit">
+            <i class="ri-save-3-line"></i> Save
+          </button>
+
+          <button class="btn btn-ghost" type="button" id="resetBtn">
+            <i class="ri-refresh-line"></i> Reset
+          </button>
+
+          <button class="btn btn-danger" type="button" id="cancelEditBtn" style="display:none;">
+            <i class="ri-close-circle-line"></i> Cancel Edit
+          </button>
+        </div>
+      </div>
+    </form>
+
+    <!-- LIST (GRID.JS) -->
+    <div class="card card-pad fade-up">
+      <div class="card-row">
+        <div>
+          <div class="font-extrabold text-lg">Product List</div>
+          <div class="text-sm text-slate-500">Cari, sort, pagination. Klik Edit/Del di kolom Action.</div>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+          <button class="btn btn-ghost" id="reloadBtn"><i class="ri-refresh-line"></i></button>
+          <div class="pill"><i class="ri-box-3-line"></i> <span id="countBox">0</span> items</div>
+        </div>
+      </div>
+
+      <div class="mt-3 help">
+        Tip: gunakan search di table. Pagination otomatis.
+      </div>
+
+      <div class="mt-4 rd-grid-wrap">
+        <div id="productsGrid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// public/products.js (Grid.js + existing CRUD form, FINAL)
+window.RD = window.RD || {};
+RD.pages = RD.pages || {};
+
+RD.pages.products = (function () {
+  let DATA = [];
+  let CURRENT_IMAGE = null;
+  let grid = null;
+  let mounted = false;
+
+  function rupiah(n){ return 'Rp ' + (Number(n||0)).toLocaleString('id-ID'); }
+
+  function escapeHtml(s){
+    return String(s || '')
+      .replaceAll('&','&amp;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;')
+      .replaceAll('"','&quot;')
+      .replaceAll("'",'&#039;');
+  }
+
+  function setMode(mode){
+    if(mode === 'edit'){
+      $('#modeBadge').removeClass('info').addClass('warn').html('<i class="ri-pencil-line"></i> edit');
+      $('#formTitle').text('Edit Product');
+      $('#formHint').text('Ubah data lalu klik Save. Upload image hanya jika mau ganti.');
+      $('#cancelEditBtn').show();
+    } else {
+      $('#modeBadge').removeClass('warn').addClass('info').html('<i class="ri-add-circle-line"></i> create');
+      $('#formTitle').text('Create Product');
+      $('#formHint').text('Isi data lalu klik Save.');
+      $('#cancelEditBtn').hide();
+    }
+  }
+
+  function applyPriceTypeRules(){
+    const t = $('#price_type').val();
+    if(t === 'fixed'){
+      $('#price').prop('disabled', false);
+      $('#price_per_item').prop('disabled', true).val(0);
+    } else {
+      $('#price').prop('disabled', true).val(0);
+      $('#price_per_item').prop('disabled', false);
+    }
+  }
+
+  function resetForm(){
+    CURRENT_IMAGE = null;
+    $('#pid').val('');
+    if ($('#productForm')[0]) $('#productForm')[0].reset();
+    $('#game_name').val('Royal Dreams');
+    $('#price').val(0);
+    $('#price_per_item').val(0);
+    $('#sort_order').val(0);
+    $('#active').val('1');
+    $('#price_type').val('fixed');
+    $('#image').val('');
+    $('#imgPreview').html('<i class="ri-image-line" style="font-size:26px;color:rgba(100,116,139,.9)"></i>');
+    setMode('create');
+    applyPriceTypeRules();
+  }
+
+  function statusBadge(active){
+    const isOn = String(active) === '1';
+    return isOn
+      ? `<span class="badge good"><i class="ri-check-line"></i> active</span>`
+      : `<span class="badge bad"><i class="ri-close-line"></i> inactive</span>`;
+  }
+
+  function priceText(p){
+    return (p.price_type === 'fixed')
+      ? rupiah(p.price)
+      : (rupiah(p.price_per_item) + ' /item');
+  }
+
+  function buildGridRows(list){
+    return (list || []).map(p => ([
+      gridjs.html(
+        p.image
+          ? `<div class="rd-imgcell"><img src="${escapeHtml(p.image)}" alt="img"/></div>`
+          : `<div class="rd-imgcell rd-imgcell--empty"><i class="ri-image-line"></i></div>`
+      ),
+      gridjs.html(`<div class="rd-cell-title">${escapeHtml(p.name)}</div><div class="rd-cell-sub"><b>${escapeHtml(p.sku)}</b> • ${escapeHtml(p.game_name || 'Royal Dreams')}</div>`),
+      gridjs.html(`<span class="badge info"><i class="ri-price-tag-3-line"></i> ${escapeHtml(p.price_type)}</span>`),
+      gridjs.html(`<div class="rd-cell-money">${escapeHtml(priceText(p))}</div>`),
+      gridjs.html(statusBadge(p.active)),
+      gridjs.html(`<span class="badge"><i class="ri-sort-asc"></i> ${Number(p.sort_order||0)}</span>`),
+      gridjs.html(`
+        <div class="rd-actions">
+          <button class="btn btn-sm js-prd-edit" data-id="${p.id}"><i class="ri-pencil-line"></i> Edit</button>
+          <button class="btn btn-sm btn-danger js-prd-del" data-id="${p.id}"><i class="ri-delete-bin-6-line"></i></button>
+        </div>
+      `)
+    ]));
+  }
+
+  function renderGrid(){
+    const el = document.getElementById('productsGrid');
+    if (!el) return;
+
+    const rows = buildGridRows(DATA);
+
+    if (grid) {
+      grid.updateConfig({ data: rows }).forceRender();
+      return;
+    }
+
+    grid = new gridjs.Grid({
+      columns: [
+        { name: 'Img', width: '74px' },
+        { name: 'Product', width: '360px' },
+        { name: 'Type', width: '120px' },
+        { name: 'Price', width: '160px' },
+        { name: 'Status', width: '150px' },
+        { name: 'Sort', width: '90px' },
+        { name: 'Action', width: '190px' }
+      ],
+      data: rows,
+      sort: true,
+      search: true,
+      pagination: { enabled: true, limit: 8, summary: true },
+      fixedHeader: true,
+      height: '520px',
+      className: {
+        table: 'rd-grid',
+        th: 'rd-grid-th',
+        td: 'rd-grid-td'
+      },
+      language: {
+        search: { placeholder: 'Cari SKU / Name / Game...' },
+        pagination: {
+          previous: 'Prev',
+          next: 'Next',
+          showing: 'Menampilkan',
+          results: () => 'data'
+        },
+        noRecordsFound: 'Tidak ada produk',
+        error: 'Gagal memuat data'
+      }
+    });
+
+    grid.render(el);
+  }
+
+  async function load(){
+    $('#countBox').text('0');
+    try {
+      const resp = await $.ajax({
+        method: 'GET',
+        url: window.__ADMIN_BASE + '/api/products',
+        headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
+      });
+
+      if (!resp || resp.ok !== true) throw new Error(resp?.message || 'Failed');
+
+      DATA = resp.data || [];
+      $('#countBox').text(DATA.length);
+      renderGrid();
+    } catch (e) {
+      toastr.error(e.responseJSON?.message || e.message || 'Failed load products');
+      const el = document.getElementById('productsGrid');
+      if (el) el.innerHTML = `<div class="text-rose-600 text-sm">Error load products</div>`;
+    }
+  }
+
+  function loadToFormById(id){
+    const p = (DATA || []).find(x => String(x.id) === String(id));
+    if (!p) return;
+
+    $('#pid').val(p.id);
+    $('#sku').val(p.sku);
+    $('#name').val(p.name);
+    $('#game_name').val(p.game_name || 'Royal Dreams');
+    $('#price_type').val(p.price_type);
+    $('#price').val(p.price);
+    $('#price_per_item').val(p.price_per_item);
+    $('#active').val(String(p.active));
+    $('#sort_order').val(p.sort_order);
+
+    CURRENT_IMAGE = p.image || null;
+    if (CURRENT_IMAGE){
+      $('#imgPreview').html(`<img src="${escapeHtml(CURRENT_IMAGE)}" class="w-full h-full object-cover" />`);
+    } else {
+      $('#imgPreview').html('<i class="ri-image-line" style="font-size:26px;color:rgba(100,116,139,.9)"></i>');
+    }
+
+    setMode('edit');
+    applyPriceTypeRules();
+    toastr.info('Loaded for edit (upload image jika mau ganti)');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function deleteById(id){
+    if (!confirm('Delete product?')) return;
+    RD.ui.overlay(true);
+    try {
+      const resp = await $.ajax({
+        method:'DELETE',
+        url: window.__ADMIN_BASE + '/api/products/' + encodeURIComponent(id),
+        headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
+      });
+      if (!resp || resp.ok !== true) throw new Error(resp?.message || 'Failed');
+      toastr.success('Deleted');
+      if(String($('#pid').val()) === String(id)) resetForm();
+      load();
+    } catch (e) {
+      toastr.error(e.responseJSON?.message || e.message || 'Failed');
+    } finally {
+      RD.ui.overlay(false);
+    }
+  }
+
+  function bindEvents(){
+    if (mounted) return;
+    mounted = true;
+
+    $(document).on('change', '#price_type', applyPriceTypeRules);
+
+    $(document).on('change', '#image', function(){
+      const f = this.files && this.files[0];
+      if(!f){
+        if(CURRENT_IMAGE){
+          $('#imgPreview').html(`<img src="${escapeHtml(CURRENT_IMAGE)}" class="w-full h-full object-cover" />`);
+        } else {
+          $('#imgPreview').html('<i class="ri-image-line" style="font-size:26px;color:rgba(100,116,139,.9)"></i>');
+        }
+        return;
+      }
+      const url = URL.createObjectURL(f);
+      $('#imgPreview').html(`<img src="${url}" class="w-full h-full object-cover" />`);
+    });
+
+    $(document).on('click', '#reloadBtn, #reloadBtnTop', function(){ load(); });
+
+    $(document).on('click', '#resetBtn', function(){ resetForm(); });
+
+    $(document).on('click', '#resetBtnTop', function(){
+      resetForm();
+      toastr.info('New product mode');
+    });
+
+    $(document).on('click', '#cancelEditBtn', function(){
+      resetForm();
+      toastr.info('Edit cancelled');
+    });
+
+    $(document).on('submit', '#productForm', async function(e){
+      e.preventDefault();
+
+      const id = ($('#pid').val() || '').trim();
+      const fd = new FormData(this);
+
+      const pt = $('#price_type').val();
+      if(pt === 'fixed') fd.set('price_per_item', '0');
+      else fd.set('price', '0');
+
+      RD.ui.overlay(true);
+      try {
+        let url = window.__ADMIN_BASE + '/api/products';
+        let method = 'POST';
+        if (id) { url = window.__ADMIN_BASE + '/api/products/' + encodeURIComponent(id); method = 'PUT'; }
+
+        const resp = await $.ajax({
+          url,
+          method,
+          data: fd,
+          processData: false,
+          contentType: false,
+          headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
+        });
+
+        if (!resp || resp.ok !== true) throw new Error(resp?.message || 'Failed');
+
+        toastr.success('Saved');
+        resetForm();
+        load();
+      } catch (e2) {
+        toastr.error(e2.responseJSON?.message || e2.message || 'Failed');
+      } finally {
+        RD.ui.overlay(false);
+      }
+    });
+
+    // Grid action buttons (delegation)
+    $(document).on('click', '.js-prd-edit', function(){
+      loadToFormById($(this).data('id'));
+    });
+
+    $(document).on('click', '.js-prd-del', function(){
+      deleteById($(this).data('id'));
+    });
+  }
+
+  function mount(){
+    bindEvents();
+    resetForm();
+    load();
+  }
+
+  function unmount(){
+    // optional: keep handlers (router SPA) - but prevent duplicate bind by mounted flag
+  }
+
+  return { mount, unmount };
+})();
+</script>
