@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title><%= settings.site_name %> - Topup</title>
+
+  <meta name="csrf-token" content="<%= csrfToken %>" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css"/>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <link rel="stylesheet" href="/public/app.css" />
+</head>
+<body class="font-[Inter] bg-slate-50 text-slate-900">
+  <!-- topbar -->
+  <header class="sticky top-0 z-30 bg-white/80 backdrop-blur border-b">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <a href="/#/" class="flex items-center gap-2">
+        <div class="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold">RD</div>
+        <div>
+          <div class="font-bold leading-tight"><%= settings.site_name %></div>
+          <div class="text-xs text-slate-500"><%= settings.brand_tagline %></div>
+        </div>
+      </a>
+      <nav class="flex items-center gap-2">
+        <a href="/#\/home" class="px-3 py-2 rounded-lg hover:bg-slate-100 text-sm">Home</a>
+        <a href="/#\/products" class="px-3 py-2 rounded-lg hover:bg-slate-100 text-sm">Produk</a>
+        <a href="/#\/checkout" class="px-3 py-2 rounded-lg bg-slate-900 text-white text-sm">Checkout</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 py-6">
+    <div id="app-content"></div>
+  </main>
+
+  <footer class="border-t bg-white">
+    <div class="max-w-6xl mx-auto px-4 py-8 text-sm text-slate-600 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+      <div>© <%= new Date().getFullYear() %> <%= settings.site_name %>. All rights reserved.</div>
+      <div class="flex items-center gap-3">
+        <a class="hover:text-slate-900" href="/#\/home">Home</a>
+        <a class="hover:text-slate-900" href="/#\/products">Produk</a>
+        <a class="hover:text-slate-900" href="/#\/checkout">Checkout</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- overlay loading -->
+  <div id="overlay" class="hidden fixed inset-0 z-50 bg-black/30 backdrop-blur-sm">
+    <div class="absolute inset-0 flex items-center justify-center">
+      <div class="bg-white rounded-2xl px-5 py-4 shadow-lg flex items-center gap-3">
+        <div class="w-5 h-5 rounded-full border-2 border-slate-300 border-t-slate-900 animate-spin"></div>
+        <div class="text-sm font-semibold">Memproses…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Midtrans Snap -->
+  <script
+    src="<%= snapUrl %>"
+    data-client-key="<%= midtransClientKey %>"></script>
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+
+  <script>
+    window.__CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+  </script>
+  <script src="/public/app.js"></script>
+</body>
+</html>
