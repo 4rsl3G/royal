@@ -1,0 +1,173 @@
+<div class="fade-up flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+  <div>
+    <h2 class="text-2xl font-extrabold">Orders</h2>
+    <p class="text-slate-500 text-sm">Filter, cari, dan update fulfill status.</p>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full md:w-auto">
+    <input id="q" class="input" placeholder="Search: order_id / game_id / wa / product" />
+    <select id="pay_status" class="input">
+      <option value="">pay_status: all</option>
+      <option>pending</option>
+      <option>settlement</option>
+      <option>capture</option>
+      <option>expire</option>
+      <option>cancel</option>
+      <option>deny</option>
+      <option>failure</option>
+    </select>
+    <select id="fulfill_status" class="input">
+      <option value="">fulfill: all</option>
+      <option value="waiting">waiting</option>
+      <option value="processing">processing</option>
+      <option value="done">done</option>
+      <option value="rejected">rejected</option>
+    </select>
+  </div>
+</div>
+
+<div class="mt-4 bg-white border rounded-2xl p-4 shadow-sm fade-up overflow-auto">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="text-left text-slate-500">
+        <th class="py-2 pr-3">Order</th>
+        <th class="py-2 pr-3">Produk</th>
+        <th class="py-2 pr-3">Customer</th>
+        <th class="py-2 pr-3">Amount</th>
+        <th class="py-2 pr-3">Pay</th>
+        <th class="py-2 pr-3">Fulfill</th>
+        <th class="py-2 pr-3"></th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+<!-- modal -->
+<div id="modal" class="hidden fixed inset-0 z-50 bg-black/30 backdrop-blur-sm">
+  <div class="absolute inset-0 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-lg border shadow-lg p-5">
+      <div class="flex items-center justify-between">
+        <div class="font-extrabold text-lg">Update Fulfill</div>
+        <button class="btn-ghost" id="closeModal"><i class="ri-close-line"></i></button>
+      </div>
+
+      <div class="mt-3 text-sm">
+        <div class="text-slate-500">Order ID</div>
+        <div class="font-bold" id="mOrderId">-</div>
+      </div>
+
+      <div class="mt-3 grid gap-3">
+        <div>
+          <label class="label">Fulfill Status</label>
+          <select id="mFulfill" class="input">
+            <option value="waiting">waiting</option>
+            <option value="processing">processing</option>
+            <option value="done">done</option>
+            <option value="rejected">rejected</option>
+          </select>
+        </div>
+        <div>
+          <label class="label">Admin Note</label>
+          <textarea id="mNote" class="input" rows="3" placeholder="Catatan untuk customer (dipakai di template WA)"></textarea>
+        </div>
+
+        <button class="btn-primary justify-center" id="saveBtn">
+          <i class="ri-save-3-line"></i> Simpan
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function rupiah(n){ return 'Rp ' + (Number(n||0)).toLocaleString('id-ID'); }
+  let CURRENT = null;
+
+  function rowHtml(o){
+    return `<tr class="border-t">
+      <td class="py-2 pr-3">
+        <div class="font-semibold">${o.order_id}</div>
+        <div class="text-xs text-slate-500">${String(o.created_at).replace('T',' ').slice(0,19)}</div>
+      </td>
+      <td class="py-2 pr-3">
+        <div class="font-semibold">${o.product_name}</div>
+      </td>
+      <td class="py-2 pr-3">
+        <div class="font-semibold">${o.game_id}</div>
+        <div class="text-xs text-slate-500">${o.whatsapp}</div>
+      </td>
+      <td class="py-2 pr-3">
+        <div class="font-bold">${rupiah(o.gross_amount)}</div>
+      </td>
+      <td class="py-2 pr-3"><span class="pill">${o.pay_status}</span></td>
+      <td class="py-2 pr-3"><span class="pill">${o.fulfill_status}</span></td>
+      <td class="py-2 pr-3 text-right">
+        <button class="btn-ghost js-edit" data-oid="${o.order_id}" data-ful="${o.fulfill_status}" data-note="${(o.admin_note||'').replaceAll('"','&quot;')}">
+          <i class="ri-pencil-line"></i>
+        </button>
+      </td>
+    </tr>`;
+  }
+
+  async function load(){
+    const qs = $.param({
+      q: $('#q').val(),
+      pay_status: $('#pay_status').val(),
+      fulfill_status: $('#fulfill_status').val()
+    });
+    RD.ui.skeleton('#tbody', 6);
+
+    try {
+      const resp = await $.ajax({
+        method:'GET',
+        url: window.__ADMIN_BASE + '/api/orders?' + qs,
+        headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
+      });
+      if (!resp.ok) throw new Error('Failed');
+
+      $('#tbody').html((resp.data||[]).map(rowHtml).join('') || `<tr><td class="py-3 text-slate-500" colspan="7">No data</td></tr>`);
+
+      $('.js-edit').on('click', function(){
+        CURRENT = $(this).data('oid');
+        $('#mOrderId').text(CURRENT);
+        $('#mFulfill').val($(this).data('ful'));
+        $('#mNote').val($(this).data('note'));
+        $('#modal').removeClass('hidden');
+      });
+
+    } catch(e) {
+      toastr.error(e.message || 'Failed load orders');
+      $('#tbody').html(`<tr><td class="py-3 text-rose-600" colspan="7">Error</td></tr>`);
+    }
+  }
+
+  $('#q').on('keyup', RD.util.debounce(load, 400));
+  $('#pay_status, #fulfill_status').on('change', load);
+
+  $('#closeModal').on('click', () => $('#modal').addClass('hidden'));
+  $('#modal').on('click', (e) => { if (e.target.id==='modal') $('#modal').addClass('hidden'); });
+
+  $('#saveBtn').on('click', async function(){
+    if (!CURRENT) return;
+    RD.ui.overlay(true);
+    try {
+      const resp = await $.ajax({
+        method:'POST',
+        url: window.__ADMIN_BASE + '/api/orders/' + encodeURIComponent(CURRENT) + '/fulfill',
+        data: { fulfill_status: $('#mFulfill').val(), admin_note: $('#mNote').val() },
+        headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
+      });
+      if (!resp.ok) throw new Error(resp.message || 'Failed');
+      toastr.success('Saved');
+      $('#modal').addClass('hidden');
+      load();
+    } catch(e) {
+      toastr.error(e.responseJSON?.message || e.message || 'Failed');
+    } finally {
+      RD.ui.overlay(false);
+    }
+  });
+
+  load();
+</script>
