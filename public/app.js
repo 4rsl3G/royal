@@ -60,8 +60,8 @@
       AOS.init({
         duration: 700,
         easing: 'ease-out-cubic',
-        once: false,     // infinite animate on revisit
-        mirror: true,    // animate on scroll up
+        once: false,
+        mirror: true,
         offset: 40
       });
       window.__AOS_INITED = true;
@@ -74,12 +74,18 @@
     try {
       const html = await $.ajax({ method: 'GET', url });
       $('#app-content').html(html);
+
       initAOS();
       setActiveNavByHash();
 
-      // small “pop-in” feel for whole content
       $('#app-content').css({ opacity: 0, transform: 'translateY(6px)' });
-      setTimeout(() => $('#app-content').css({ opacity: 1, transform: 'translateY(0)', transition: 'all .18s ease-out' }), 10);
+      setTimeout(() => {
+        $('#app-content').css({
+          opacity: 1,
+          transform: 'translateY(0)',
+          transition: 'all .18s ease-out'
+        });
+      }, 10);
     } catch (e) {
       RD.toast.err('Gagal memuat halaman.');
     }
@@ -88,14 +94,12 @@
   function route() {
     const hash = location.hash || '#/home';
 
-    // Public hash routes mapping
     if (hash === '#/' || hash === '#') return (location.hash = '#/home');
 
     if (hash.startsWith('#/home')) return loadPartial('/home');
     if (hash.startsWith('#/products')) return loadPartial('/products');
     if (hash.startsWith('#/checkout')) return loadPartial('/checkout');
 
-    // order pages
     if (hash.startsWith('#/order/')) {
       const id = hash.replace('#/order/', '');
       return loadPartial(`/order/${encodeURIComponent(id)}`);
@@ -109,24 +113,17 @@
       return loadPartial(`/order/${encodeURIComponent(id)}/failed`);
     }
 
-    // fallback
     return loadPartial('/home');
   }
 
   // Drawer
-  function openDrawer() {
-    $('#drawer').removeClass('hidden');
-  }
-  function closeDrawer() {
-    $('#drawer').addClass('hidden');
-  }
+  function openDrawer() { $('#drawer').removeClass('hidden'); }
+  function closeDrawer() { $('#drawer').addClass('hidden'); }
 
-  // Global AJAX defaults
   $.ajaxSetup({
     headers: { 'x-csrf-token': RD.csrf() }
   });
 
-  // Toastr config
   toastr.options = {
     closeButton: true,
     progressBar: true,
@@ -134,23 +131,15 @@
     timeOut: 2500
   };
 
-  // Events
-  $(document).on('click', '#btn-menu', function () {
-    openDrawer();
-  });
-  $(document).on('click', '#btn-close-drawer, #drawer .drawer-backdrop', function () {
-    closeDrawer();
-  });
+  $(document).on('click', '#btn-menu', openDrawer);
+  $(document).on('click', '#btn-close-drawer, #drawer .drawer-backdrop', closeDrawer);
 
-  // Close drawer when navigating
   $(document).on('click', 'a[href^="/#/"]', function () {
     closeDrawer();
   });
 
-  // Route on hash change
   window.addEventListener('hashchange', route);
 
-  // Initial route
   $(function () {
     setActiveNavByHash();
     route();
