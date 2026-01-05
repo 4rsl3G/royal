@@ -1,79 +1,231 @@
 <div class="fade-up">
-  <h2 class="text-2xl font-extrabold">Settings</h2>
-  <p class="text-slate-500 text-sm">Konfigurasi Midtrans & WhatsApp template.</p>
+  <div class="card card-pad scanline">
+    <div class="card-row">
+      <div class="min-w-0">
+        <div class="pill"><i class="ri-settings-3-line"></i> Configuration</div>
+        <div class="card-title mt-2">Settings</div>
+        <div class="card-sub">Konfigurasi Midtrans, WhatsApp, dan template notifikasi.</div>
+      </div>
+      <div class="flex gap-2 flex-wrap">
+        <button class="btn btn-ghost" id="btnReload">
+          <i class="ri-refresh-line"></i> Reload
+        </button>
+        <button class="btn btn-primary shimmer" form="settingsForm" type="submit">
+          <i class="ri-save-3-line"></i> Save
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 
-<form id="settingsForm" class="mt-4 bg-white border rounded-2xl p-4 shadow-sm fade-up">
-  <div class="grid gap-3">
-    <div class="grid sm:grid-cols-2 gap-3">
+<form id="settingsForm" class="mt-4 fade-up">
+  <!-- Brand -->
+  <div class="card card-pad">
+    <div class="card-row">
       <div>
-        <label class="label">Site Name</label>
-        <input class="input" name="site_name" id="site_name" />
+        <div class="font-extrabold text-lg">Brand</div>
+        <div class="text-sm text-slate-500">Nama situs & tagline untuk publik.</div>
       </div>
-      <div>
-        <label class="label">Brand Tagline</label>
-        <input class="input" name="brand_tagline" id="brand_tagline" />
-      </div>
+      <span class="badge info"><i class="ri-layout-2-line"></i> UI</span>
     </div>
 
-    <div class="grid sm:grid-cols-3 gap-3">
-      <div>
-        <label class="label">Midtrans Production</label>
-        <select class="input" name="midtrans_is_production" id="midtrans_is_production">
-          <option value="false">false</option>
-          <option value="true">true</option>
-        </select>
+    <div class="mt-4 form-grid">
+      <div class="col-6">
+        <div class="label">Site Name</div>
+        <input class="input" name="site_name" id="site_name" placeholder="Royal Dreams" />
       </div>
-      <div>
-        <label class="label">Midtrans Server Key</label>
-        <input class="input" name="midtrans_server_key" id="midtrans_server_key" placeholder="Isi full key (akan disimpan)" />
-        <div class="hint">Jika sudah ada, input ulang untuk mengganti.</div>
+      <div class="col-6">
+        <div class="label">Brand Tagline</div>
+        <input class="input" name="brand_tagline" id="brand_tagline" placeholder="Cepat, aman, dan resmi." />
       </div>
-      <div>
-        <label class="label">Midtrans Client Key</label>
-        <input class="input" name="midtrans_client_key" id="midtrans_client_key" />
-      </div>
-    </div>
-
-    <div class="grid sm:grid-cols-2 gap-3">
-      <div>
-        <label class="label">WhatsApp Enabled</label>
-        <select class="input" name="whatsapp_enabled" id="whatsapp_enabled">
-          <option value="false">false</option>
-          <option value="true">true</option>
-        </select>
-        <div class="hint">Aktifkan lalu pairing di menu WhatsApp.</div>
-      </div>
-      <div class="bg-slate-50 border rounded-xl p-3 text-xs text-slate-600">
-        Placeholder template:
-        <div class="mt-1 font-mono">
-          {order_id} {product} {total} {pay_status} {game_id} {nickname} {admin_note}
+      <div class="col-12">
+        <div class="help">
+          Tips: setelah mengganti, lakukan <b>Assets Version bump</b> agar cache UI publik/admin ikut refresh.
         </div>
       </div>
     </div>
+  </div>
 
-    <div class="grid md:grid-cols-3 gap-3">
+  <!-- Midtrans -->
+  <div class="card card-pad mt-4 scanline">
+    <div class="card-row">
       <div>
-        <label class="label">Template Pay</label>
-        <textarea class="input" rows="5" name="whatsapp_template_pay" id="whatsapp_template_pay"></textarea>
+        <div class="font-extrabold text-lg">Midtrans</div>
+        <div class="text-sm text-slate-500">
+          Mode <b>production</b> / <b>sandbox</b> bisa diubah kapan saja dari sini.
+        </div>
       </div>
-      <div>
-        <label class="label">Template Done</label>
-        <textarea class="input" rows="5" name="whatsapp_template_done" id="whatsapp_template_done"></textarea>
-      </div>
-      <div>
-        <label class="label">Template Rejected</label>
-        <textarea class="input" rows="5" name="whatsapp_template_rejected" id="whatsapp_template_rejected"></textarea>
-      </div>
+      <span class="badge warn"><i class="ri-secure-payment-line"></i> Payment</span>
     </div>
 
-    <button class="btn-primary justify-center" type="submit">
+    <div class="mt-4 form-grid">
+      <div class="col-4">
+        <div class="label">Midtrans Production</div>
+        <select class="select" name="midtrans_is_production" id="midtrans_is_production">
+          <option value="false">false (sandbox)</option>
+          <option value="true">true (production)</option>
+        </select>
+        <div class="help">Kalau true, Snap/Callback mengarah ke domain production.</div>
+      </div>
+
+      <div class="col-4">
+        <div class="label">Midtrans Server Key</div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <input class="input" type="password" name="midtrans_server_key" id="midtrans_server_key"
+                 placeholder="Isi full key untuk menyimpan / mengganti" />
+          <button class="btn btn-sm" type="button" id="btnShowServer">
+            <i class="ri-eye-line"></i>
+          </button>
+        </div>
+        <div class="help">
+          Untuk keamanan, server key <b>tidak</b> ditampilkan. Isi ulang jika ingin mengganti.
+        </div>
+      </div>
+
+      <div class="col-4">
+        <div class="label">Midtrans Client Key</div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <input class="input" type="password" name="midtrans_client_key" id="midtrans_client_key" />
+          <button class="btn btn-sm" type="button" id="btnShowClient">
+            <i class="ri-eye-line"></i>
+          </button>
+        </div>
+        <div class="help">Client key dipakai untuk <b>snap.js</b> di public.</div>
+      </div>
+
+      <div class="col-12">
+        <div class="card soft card-pad" style="border-radius:18px;border:1px solid var(--line2);">
+          <div class="text-sm font-extrabold">Catatan penting</div>
+          <div class="help" style="margin-top:6px;">
+            - Mode prod/sandbox bisa diubah kapan saja.<br/>
+            - UI publik memilih snap.js otomatis berdasarkan <code>midtrans_is_production</code>.<br/>
+            - Setelah save settings, sebaiknya bump assets_version agar file publik/admin tidak ketahan cache.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WhatsApp -->
+  <div class="card card-pad mt-4">
+    <div class="card-row">
+      <div>
+        <div class="font-extrabold text-lg">WhatsApp</div>
+        <div class="text-sm text-slate-500">Aktifkan notifikasi otomatis saat bayar & selesai.</div>
+      </div>
+      <span class="badge good"><i class="ri-whatsapp-line"></i> Notify</span>
+    </div>
+
+    <div class="mt-4 form-grid">
+      <div class="col-6">
+        <div class="label">WhatsApp Enabled</div>
+        <select class="select" name="whatsapp_enabled" id="whatsapp_enabled">
+          <option value="false">false</option>
+          <option value="true">true</option>
+        </select>
+        <div class="help">
+          Setelah enable, pairing di menu <b>WhatsApp</b>. Jika QR tidak muncul, gunakan <b>pairing code</b>.
+        </div>
+      </div>
+
+      <div class="col-6">
+        <div class="label">Template Placeholders</div>
+        <div class="card soft card-pad" style="border-radius:18px;border:1px solid var(--line2);">
+          <div class="text-xs text-slate-500">Bisa dipakai di template:</div>
+          <div class="mt-2" style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-weight: 900;">
+            {order_id} {product} {total} {pay_status} {game_id} {nickname} {admin_note}
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="flex gap-2 flex-wrap">
+          <button type="button" class="btn btn-sm" id="btnTplDefault">
+            <i class="ri-magic-line"></i> Use Default Templates
+          </button>
+          <button type="button" class="btn btn-sm" id="btnTplClear">
+            <i class="ri-eraser-line"></i> Clear Templates
+          </button>
+          <a href="<%= adminBasePath %>#/whatsapp" class="btn btn-sm btn-primary shimmer">
+            <i class="ri-qr-code-line"></i> Go Pair WhatsApp
+          </a>
+        </div>
+      </div>
+
+      <div class="col-4">
+        <div class="label">Template Pay</div>
+        <textarea class="textarea" rows="6" name="whatsapp_template_pay" id="whatsapp_template_pay"></textarea>
+      </div>
+
+      <div class="col-4">
+        <div class="label">Template Done</div>
+        <textarea class="textarea" rows="6" name="whatsapp_template_done" id="whatsapp_template_done"></textarea>
+      </div>
+
+      <div class="col-4">
+        <div class="label">Template Rejected</div>
+        <textarea class="textarea" rows="6" name="whatsapp_template_rejected" id="whatsapp_template_rejected"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assets Version -->
+  <div class="card card-pad mt-4 scanline">
+    <div class="card-row">
+      <div>
+        <div class="font-extrabold text-lg">Assets Version</div>
+        <div class="text-sm text-slate-500">
+          Cache bust untuk file <b>/public</b>. Naikkan ini kalau perubahan CSS/JS tidak muncul.
+        </div>
+      </div>
+      <span class="badge"><i class="ri-bubble-chart-line"></i> Cache</span>
+    </div>
+
+    <div class="mt-4 form-grid">
+      <div class="col-6">
+        <div class="label">assets_version</div>
+        <input class="input" name="assets_version" id="assets_version" placeholder="contoh: 15" />
+        <div class="help">
+          Best practice: setiap update UI → naikkan +1 (misal 15 → 16).
+        </div>
+      </div>
+
+      <div class="col-6">
+        <div class="label">Quick Actions</div>
+        <div class="flex gap-2 flex-wrap">
+          <button class="btn btn-sm" type="button" id="btnBumpAsset">
+            <i class="ri-add-line"></i> Auto +1
+          </button>
+          <button class="btn btn-sm" type="button" id="btnSetTimestamp">
+            <i class="ri-time-line"></i> Use Timestamp
+          </button>
+        </div>
+        <div class="help">Timestamp paling efektif untuk “paksa” cache refresh.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4">
+    <button class="btn btn-primary shimmer btn-block" type="submit">
       <i class="ri-save-3-line"></i> Save Settings
     </button>
   </div>
 </form>
 
 <script>
+  function togglePw(sel){
+    const $i = $(sel);
+    $i.attr('type', $i.attr('type') === 'password' ? 'text' : 'password');
+  }
+
+  function defaultTemplates(){
+    return {
+      pay: '✅ Pembayaran diterima\\nOrder: {order_id}\\nProduk: {product}\\nTotal: {total}\\nStatus: {pay_status}\\nGame ID: {game_id} ({nickname})\\n\\nTerima kasih 🙏',
+      done: '🎉 Order selesai\\nOrder: {order_id}\\nProduk: {product}\\nTotal: {total}\\nGame ID: {game_id} ({nickname})\\nCatatan: {admin_note}\\n\\nThanks 💎',
+      rejected: '❌ Order ditolak\\nOrder: {order_id}\\nProduk: {product}\\nTotal: {total}\\nGame ID: {game_id} ({nickname})\\nAlasan: {admin_note}\\n\\nHubungi admin untuk bantuan.'
+    };
+  }
+
   async function load(){
     RD.ui.overlay(true);
     try {
@@ -87,14 +239,20 @@
       const s = resp.data || {};
       $('#site_name').val(s.site_name || '');
       $('#brand_tagline').val(s.brand_tagline || '');
-      $('#midtrans_is_production').val(String(s.midtrans_is_production || 'false'));
-      $('#midtrans_server_key').val(''); // do not auto fill masked
-      $('#midtrans_client_key').val(s.midtrans_client_key || '');
-      $('#whatsapp_enabled').val(String(s.whatsapp_enabled || 'false'));
 
+      $('#midtrans_is_production').val(String(s.midtrans_is_production || 'false'));
+
+      // do not autofill masked server key
+      $('#midtrans_server_key').val('');
+      $('#midtrans_client_key').val(s.midtrans_client_key || '');
+
+      $('#whatsapp_enabled').val(String(s.whatsapp_enabled || 'false'));
       $('#whatsapp_template_pay').val(s.whatsapp_template_pay || '');
       $('#whatsapp_template_done').val(s.whatsapp_template_done || '');
       $('#whatsapp_template_rejected').val(s.whatsapp_template_rejected || '');
+
+      // assets version (if exists)
+      $('#assets_version').val(s.assets_version || '');
 
     } catch(e) {
       toastr.error(e.message || 'Failed load settings');
@@ -102,6 +260,42 @@
       RD.ui.overlay(false);
     }
   }
+
+  $('#btnReload').on('click', load);
+
+  $('#btnShowServer').on('click', function(){ togglePw('#midtrans_server_key'); });
+  $('#btnShowClient').on('click', function(){ togglePw('#midtrans_client_key'); });
+
+  $('#btnTplDefault').on('click', function(){
+    const t = defaultTemplates();
+    $('#whatsapp_template_pay').val(t.pay);
+    $('#whatsapp_template_done').val(t.done);
+    $('#whatsapp_template_rejected').val(t.rejected);
+    toastr.info('Default templates applied');
+  });
+
+  $('#btnTplClear').on('click', function(){
+    $('#whatsapp_template_pay').val('');
+    $('#whatsapp_template_done').val('');
+    $('#whatsapp_template_rejected').val('');
+    toastr.warn('Templates cleared');
+  });
+
+  $('#btnBumpAsset').on('click', function(){
+    const cur = String($('#assets_version').val() || '').trim();
+    const n = Number(cur || 0);
+    if(Number.isFinite(n) && n > 0){
+      $('#assets_version').val(String(n + 1));
+    } else {
+      $('#assets_version').val(String(1));
+    }
+    toastr.info('assets_version updated (remember to save)');
+  });
+
+  $('#btnSetTimestamp').on('click', function(){
+    $('#assets_version').val(String(Date.now()));
+    toastr.info('assets_version set to timestamp (remember to save)');
+  });
 
   $('#settingsForm').on('submit', async function(e){
     e.preventDefault();
