@@ -6,6 +6,7 @@
         <div class="card-title mt-2">Orders</div>
         <div class="card-sub">Filter, cari, dan update fulfill status + catatan admin.</div>
       </div>
+
       <div class="flex gap-2 flex-wrap">
         <button class="btn btn-ghost" id="btnRefresh"><i class="ri-refresh-line"></i> Refresh</button>
         <button class="btn btn-primary shimmer" id="btnQuickPending">
@@ -64,7 +65,8 @@
     <div class="pill"><i class="ri-database-2-line"></i> <span id="countBox">0</span> rows</div>
   </div>
 
-  <div class="mt-4" style="overflow:auto;">
+  <!-- IMPORTANT: scroll area (orders-scroll) -->
+  <div class="mt-4 orders-scroll">
     <table class="w-full text-sm">
       <thead>
         <tr class="text-left text-slate-500">
@@ -89,14 +91,17 @@
       <div class="font-extrabold text-lg">Orders</div>
       <div class="pill"><i class="ri-database-2-line"></i> <span id="countBox2">0</span> items</div>
     </div>
-    <div class="mt-4" id="cardsBox"></div>
+
+    <!-- IMPORTANT: cards scroll area -->
+    <div class="mt-4 orders-scroll" id="cardsBox"></div>
   </div>
 </div>
 
 <!-- MODAL -->
 <div id="modal" class="hidden fixed inset-0 z-50 bg-black/30 backdrop-blur-sm">
-  <div class="absolute inset-0 flex items-center justify-center p-4">
-    <div class="card card-pad" style="width:100%;max-width:680px;">
+  <!-- IMPORTANT: modal has its own scroll container -->
+  <div class="rd-modal-wrap">
+    <div class="rd-modal-card card card-pad" style="width:100%;max-width:680px;">
       <div class="card-row">
         <div>
           <div class="font-extrabold text-lg">Update Fulfill</div>
@@ -172,7 +177,6 @@
   }
 
   let CURRENT = null;
-  let CURRENT_ROW = null;
   let DATA = [];
 
   function rowHtml(o){
@@ -252,19 +256,20 @@
 
   function openModalFromData(data){
     CURRENT = data.oid;
-    CURRENT_ROW = data;
     $('#mOrderId').text(CURRENT);
     $('#mFulfill').val(data.ful || 'waiting');
     $('#mNote').val(data.note || '');
     $('#mPayBadge').html(payBadge(data.pay || '-'));
     $('#mGross').text(rupiah(data.gross || 0));
+
+    $('body').addClass('modal-open');
     $('#modal').removeClass('hidden');
   }
 
   function closeModal(){
     $('#modal').addClass('hidden');
+    $('body').removeClass('modal-open');
     CURRENT = null;
-    CURRENT_ROW = null;
   }
 
   function renderResponsive(data){
@@ -290,8 +295,8 @@
     });
 
     // skeleton
-    $('#cardsBox').html(RD.ui.skeletonBlocks(6));
-    RD.ui.skeletonTableRows('#tbody', 7, 7);
+    $('#cardsBox').html(RD.ui.skeletonBlocks ? RD.ui.skeletonBlocks(6) : '');
+    if (RD.ui.skeletonTableRows) RD.ui.skeletonTableRows('#tbody', 7, 7);
 
     try {
       const resp = await $.ajax({
@@ -343,6 +348,11 @@
 
   $('#closeModal').on('click', closeModal);
   $('#modal').on('click', (e) => { if (e.target.id==='modal') closeModal(); });
+
+  // ESC close
+  $(document).on('keydown', function(e){
+    if (e.key === 'Escape' && !$('#modal').hasClass('hidden')) closeModal();
+  });
 
   $('#saveBtn').on('click', async function(){
     if (!CURRENT) return;
