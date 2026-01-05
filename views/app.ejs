@@ -23,9 +23,17 @@
   <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
 
+  <!-- Cache bust version -->
+  <%
+    const ASSET_V = (settings && settings.assets_version) ? String(settings.assets_version) : '1';
+    const isProd = String(settings.midtrans_is_production || 'false') === 'true';
+    const snapSrc = isProd
+      ? 'https://app.midtrans.com/snap/snap.js'
+      : 'https://app.sandbox.midtrans.com/snap/snap.js';
+  %>
+
   <!-- App CSS -->
-  <link rel="stylesheet" href="/public/app.css?v=<%= settings.assets_version || '1' %>">
-<script src="/public/app.js?v=<%= settings.assets_version || '1' %>"></script>
+  <link rel="stylesheet" href="/public/app.css?v=<%= ASSET_V %>">
 </head>
 
 <body class="min-h-screen bg-slate-50 text-slate-900">
@@ -114,7 +122,6 @@
 
   <!-- Main -->
   <main class="max-w-6xl mx-auto px-4 md:px-6 pb-16">
-    <!-- Content from AJAX -->
     <div id="app-content" class="pt-6"></div>
   </main>
 
@@ -132,25 +139,17 @@
     </div>
   </footer>
 
-  <!-- jQuery -->
+  <!-- Scripts (ORDER MATTERS) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-
-  <!-- Toastr -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 
-  <!-- Midtrans Snap -->
-  <%
-  const isProd = String(settings.midtrans_is_production || 'false') === 'true';
-  const snapSrc = isProd
-    ? 'https://app.midtrans.com/snap/snap.js'
-    : 'https://app.sandbox.midtrans.com/snap/snap.js';
-%>
-<script src="<%= snapSrc %>" data-client-key="<%= settings.midtrans_client_key || '' %>"></script>
+  <!-- Midtrans Snap (prod/sandbox auto) -->
+  <script src="<%= snapSrc %>" data-client-key="<%= settings.midtrans_client_key || '' %>"></script>
 
   <!-- AOS -->
   <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
 
-  <!-- App JS -->
-  <script src="/public/app.js"></script>
+  <!-- App JS (ONLY ONCE) -->
+  <script src="/public/app.js?v=<%= ASSET_V %>"></script>
 </body>
 </html>
