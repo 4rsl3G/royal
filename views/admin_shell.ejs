@@ -22,8 +22,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
 
   <!-- Grid.js (Cloudflare CDN) -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/gridjs/6.2.0/theme/mermaid.min.css" crossorigin="anonymous" referrerpolicy="no-referrer"/>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gridjs/6.2.0/gridjs.umd.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <link href="https://unpkg.com/gridjs/dist/theme/mermaid.min.css" rel="stylesheet" />
+
 
   <!-- Admin CSS -->
   <link rel="stylesheet" href="/public/admin.css?v=<%= ASSET_V %>" />
@@ -141,6 +141,7 @@
   <!-- Scripts -->
   <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://unpkg.com/gridjs/dist/gridjs.umd.js"></script>
 
   <script>
     window.__CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
