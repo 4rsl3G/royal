@@ -1,0 +1,141 @@
+<section class="grid md:grid-cols-2 gap-6 items-center">
+  <div class="fade-up">
+    <div class="inline-flex items-center gap-2 bg-white border rounded-full px-3 py-1 text-xs text-slate-600">
+      <i class="ri-shield-check-line"></i> Aman • Cepat • Resmi
+    </div>
+    <h1 class="mt-4 text-3xl md:text-5xl font-extrabold leading-tight">
+      Topup Chip <span class="text-slate-900"><%= settings.site_name %></span>
+      <span class="block text-slate-500 text-xl md:text-2xl mt-2 font-semibold"><%= settings.brand_tagline %></span>
+    </h1>
+    <p class="mt-4 text-slate-600 leading-relaxed">
+      Transaksi instan, pembayaran via Midtrans, notifikasi WhatsApp otomatis, dan dukungan CS cepat.
+    </p>
+    <div class="mt-6 flex flex-wrap gap-3">
+      <a href="/#\/checkout" class="btn-primary">
+        <i class="ri-flashlight-line"></i> Topup Sekarang
+      </a>
+      <a href="/#\/products" class="btn-ghost">
+        <i class="ri-store-2-line"></i> Lihat Produk
+      </a>
+    </div>
+
+    <div class="mt-6 grid grid-cols-2 gap-3 text-sm text-slate-700">
+      <div class="bg-white border rounded-xl p-3">
+        <div class="font-bold">Proses Kilat</div>
+        <div class="text-slate-500">Order & bayar, langsung diproses.</div>
+      </div>
+      <div class="bg-white border rounded-xl p-3">
+        <div class="font-bold">Update Real-time</div>
+        <div class="text-slate-500">Status order auto refresh.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fade-up">
+    <div class="bg-white border rounded-2xl p-5 shadow-sm">
+      <div class="flex items-center justify-between">
+        <div class="font-bold text-lg">Produk Populer</div>
+        <a href="/#\/products" class="text-sm text-slate-600 hover:text-slate-900">Lihat semua</a>
+      </div>
+
+      <div class="mt-4 grid gap-3">
+        <% if (popular && popular.length) { %>
+          <% popular.forEach(p => { %>
+            <div class="flex items-center gap-3 border rounded-xl p-3 hover:bg-slate-50">
+              <div class="w-12 h-12 rounded-xl bg-slate-100 overflow-hidden flex items-center justify-center">
+                <% if (p.image) { %>
+                  <img src="<%= p.image %>" class="w-full h-full object-cover" />
+                <% } else { %>
+                  <i class="ri-gamepad-line text-slate-500 text-xl"></i>
+                <% } %>
+              </div>
+              <div class="flex-1">
+                <div class="font-semibold"><%= p.name %></div>
+                <div class="text-xs text-slate-500"><%= p.sku %></div>
+              </div>
+              <div class="text-right">
+                <div class="font-bold">
+                  Rp <%= (p.price_type==='fixed' ? p.price : p.price_per_item) %>
+                </div>
+                <div class="text-xs text-slate-500"><%= p.price_type==='fixed' ? 'Fixed' : '/item' %></div>
+              </div>
+            </div>
+          <% }) %>
+        <% } else { %>
+          <div class="text-slate-500 text-sm">Belum ada produk.</div>
+        <% } %>
+      </div>
+
+      <div class="mt-4">
+        <a href="/#\/checkout" class="w-full btn-primary justify-center">
+          <i class="ri-shopping-cart-2-line"></i> Mulai Checkout
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="mt-10 fade-up">
+  <h2 class="text-xl md:text-2xl font-extrabold">Kenapa pilih kami</h2>
+  <div class="mt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+    <div class="card">
+      <i class="ri-lock-2-line text-2xl"></i>
+      <div class="font-bold mt-2">Aman</div>
+      <div class="text-sm text-slate-500">Pembayaran via gateway resmi Midtrans.</div>
+    </div>
+    <div class="card">
+      <i class="ri-timer-flash-line text-2xl"></i>
+      <div class="font-bold mt-2">Cepat</div>
+      <div class="text-sm text-slate-500">Order dibuat instan, status realtime.</div>
+    </div>
+    <div class="card">
+      <i class="ri-customer-service-2-line text-2xl"></i>
+      <div class="font-bold mt-2">Support</div>
+      <div class="text-sm text-slate-500">Dukungan admin untuk kendala transaksi.</div>
+    </div>
+    <div class="card">
+      <i class="ri-whatsapp-line text-2xl"></i>
+      <div class="font-bold mt-2">Notifikasi WA</div>
+      <div class="text-sm text-slate-500">Update pembayaran & selesai (opsional).</div>
+    </div>
+  </div>
+</section>
+
+<section class="mt-10 fade-up">
+  <h2 class="text-xl md:text-2xl font-extrabold">Cara Topup</h2>
+  <div class="mt-4 grid md:grid-cols-3 gap-3">
+    <div class="card">
+      <div class="badge">1</div>
+      <div class="font-bold mt-2">Pilih Produk</div>
+      <div class="text-sm text-slate-500">Masuk ke halaman checkout dan pilih chip.</div>
+    </div>
+    <div class="card">
+      <div class="badge">2</div>
+      <div class="font-bold mt-2">Isi Data</div>
+      <div class="text-sm text-slate-500">Masukkan Game ID, nickname, dan WhatsApp.</div>
+    </div>
+    <div class="card">
+      <div class="badge">3</div>
+      <div class="font-bold mt-2">Bayar & Selesai</div>
+      <div class="text-sm text-slate-500">Bayar via Snap, pantau status order realtime.</div>
+    </div>
+  </div>
+</section>
+
+<section class="mt-10 fade-up">
+  <h2 class="text-xl md:text-2xl font-extrabold">FAQ</h2>
+  <div class="mt-4 grid gap-3">
+    <div class="bg-white border rounded-xl p-4">
+      <div class="font-bold">Apakah aman?</div>
+      <div class="text-sm text-slate-500 mt-1">Ya. Pembayaran melalui Midtrans dan sistem dibekali hardening keamanan.</div>
+    </div>
+    <div class="bg-white border rounded-xl p-4">
+      <div class="font-bold">Berapa lama diproses?</div>
+      <div class="text-sm text-slate-500 mt-1">Biasanya cepat. Setelah pembayaran sukses, order masuk antrian proses admin.</div>
+    </div>
+    <div class="bg-white border rounded-xl p-4">
+      <div class="font-bold">Dapat notifikasi WhatsApp?</div>
+      <div class="text-sm text-slate-500 mt-1">Bisa jika fitur WhatsApp diaktifkan oleh admin.</div>
+    </div>
+  </div>
+</section>
