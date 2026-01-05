@@ -1,166 +1,150 @@
 <div class="fade-up">
-  <h2 class="text-2xl font-extrabold">Products</h2>
-  <p class="text-slate-500 text-sm">CRUD produk + upload image.</p>
+  <div class="card card-pad scanline">
+    <div class="card-row">
+      <div class="min-w-0">
+        <div class="pill"><i class="ri-store-2-line"></i> Catalog</div>
+        <div class="card-title mt-2">Products</div>
+        <div class="card-sub">CRUD produk + upload image (max 2MB). Klik item untuk edit.</div>
+      </div>
+      <div class="flex gap-2 flex-wrap">
+        <button class="btn btn-ghost" id="reloadBtnTop"><i class="ri-refresh-line"></i> Reload</button>
+        <button class="btn btn-primary shimmer" id="resetBtnTop"><i class="ri-add-line"></i> New Product</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="mt-4 grid lg:grid-cols-2 gap-4">
-  <form id="productForm" class="bg-white border rounded-2xl p-4 shadow-sm fade-up" enctype="multipart/form-data">
-    <div class="font-bold">Create / Update</div>
-    <div class="mt-3 grid gap-3">
-      <input type="hidden" name="id" id="pid" />
-      <div class="grid sm:grid-cols-2 gap-3">
-        <div>
-          <label class="label">SKU</label>
-          <input name="sku" id="sku" class="input" required />
-        </div>
-        <div>
-          <label class="label">Sort Order</label>
-          <input name="sort_order" id="sort_order" type="number" class="input" value="0" />
-        </div>
+  <!-- FORM -->
+  <form id="productForm" class="card card-pad fade-up" enctype="multipart/form-data">
+    <div class="card-row">
+      <div>
+        <div class="font-extrabold text-lg" id="formTitle">Create Product</div>
+        <div class="text-sm text-slate-500" id="formHint">Isi data lalu klik Save.</div>
+      </div>
+      <span class="badge info" id="modeBadge"><i class="ri-add-circle-line"></i> create</span>
+    </div>
+
+    <input type="hidden" name="id" id="pid" />
+
+    <div class="mt-4 form-grid">
+      <div class="col-6">
+        <div class="label">SKU</div>
+        <input name="sku" id="sku" class="input" required placeholder="RD-CHIP-100" />
       </div>
 
-      <div>
-        <label class="label">Name</label>
-        <input name="name" id="name" class="input" required />
+      <div class="col-6">
+        <div class="label">Sort Order</div>
+        <input name="sort_order" id="sort_order" type="number" class="input" value="0" />
+        <div class="help">Semakin kecil → semakin atas.</div>
       </div>
 
-      <div>
-        <label class="label">Game Name</label>
+      <div class="col-12">
+        <div class="label">Name</div>
+        <input name="name" id="name" class="input" required placeholder="Chip 100.000" />
+      </div>
+
+      <div class="col-12">
+        <div class="label">Game Name</div>
         <input name="game_name" id="game_name" class="input" value="Royal Dreams" />
       </div>
 
-      <div class="grid sm:grid-cols-2 gap-3">
-        <div>
-          <label class="label">Price Type</label>
-          <select name="price_type" id="price_type" class="input">
-            <option value="fixed">fixed</option>
-            <option value="per_item">per_item</option>
-          </select>
-        </div>
-        <div>
-          <label class="label">Active</label>
-          <select name="active" id="active" class="input">
-            <option value="1">1</option>
-            <option value="0">0</option>
-          </select>
+      <div class="col-6">
+        <div class="label">Price Type</div>
+        <select name="price_type" id="price_type" class="select">
+          <option value="fixed">fixed</option>
+          <option value="per_item">per_item</option>
+        </select>
+        <div class="help">fixed = qty dipaksa 1. per_item = qty menentukan total.</div>
+      </div>
+
+      <div class="col-6">
+        <div class="label">Active</div>
+        <select name="active" id="active" class="select">
+          <option value="1">1 (active)</option>
+          <option value="0">0 (inactive)</option>
+        </select>
+      </div>
+
+      <div class="col-6">
+        <div class="label">Price (fixed)</div>
+        <input name="price" id="price" type="number" class="input" value="0" />
+      </div>
+
+      <div class="col-6">
+        <div class="label">Price per item</div>
+        <input name="price_per_item" id="price_per_item" type="number" class="input" value="0" />
+      </div>
+
+      <div class="col-12">
+        <div class="label">Image</div>
+        <div class="card soft card-pad" style="border-radius:18px;border:1px solid var(--line2);">
+          <div class="flex items-center gap-3 flex-wrap">
+            <div id="imgPreview" class="scanline" style="width:72px;height:72px;border-radius:20px;border:1px solid var(--line);background:rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center;overflow:hidden;">
+              <i class="ri-image-line" style="font-size:26px;color:rgba(100,116,139,.9)"></i>
+            </div>
+            <div style="flex:1;min-width:220px;">
+              <input name="image" id="image" type="file" accept="image/png,image/jpeg,image/jpg,image/webp" class="input" />
+              <div class="help">Max 2MB (png/jpg/jpeg/webp). Upload hanya jika mau ganti.</div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="grid sm:grid-cols-2 gap-3">
-        <div>
-          <label class="label">Price (fixed)</label>
-          <input name="price" id="price" type="number" class="input" value="0" />
-        </div>
-        <div>
-          <label class="label">Price per item</label>
-          <input name="price_per_item" id="price_per_item" type="number" class="input" value="0" />
-        </div>
-      </div>
-
-      <div>
-        <label class="label">Image</label>
-        <input name="image" type="file" accept="image/png,image/jpeg,image/jpg,image/webp" class="input" />
-        <div class="hint">Max 2MB (png/jpg/jpeg/webp)</div>
-      </div>
-
-      <div class="flex gap-2">
-        <button class="btn-primary justify-center flex-1" type="submit">
+      <div class="col-12 flex gap-2 flex-wrap">
+        <button class="btn btn-primary shimmer btn-block" type="submit">
           <i class="ri-save-3-line"></i> Save
         </button>
-        <button class="btn-ghost" type="button" id="resetBtn">
-          <i class="ri-refresh-line"></i>
+
+        <button class="btn btn-ghost" type="button" id="resetBtn">
+          <i class="ri-refresh-line"></i> Reset
+        </button>
+
+        <button class="btn btn-danger" type="button" id="cancelEditBtn" style="display:none;">
+          <i class="ri-close-circle-line"></i> Cancel Edit
         </button>
       </div>
     </div>
   </form>
 
-  <div class="bg-white border rounded-2xl p-4 shadow-sm fade-up overflow-auto">
-    <div class="flex items-center justify-between">
-      <div class="font-bold">List</div>
-      <button class="btn-ghost" id="reloadBtn"><i class="ri-refresh-line"></i></button>
+  <!-- LIST -->
+  <div class="card card-pad fade-up overflow-auto">
+    <div class="card-row">
+      <div>
+        <div class="font-extrabold text-lg">Product List</div>
+        <div class="text-sm text-slate-500">Klik Edit untuk memuat data ke form.</div>
+      </div>
+      <div class="flex gap-2 flex-wrap">
+        <button class="btn btn-ghost" id="reloadBtn"><i class="ri-refresh-line"></i></button>
+        <div class="pill"><i class="ri-box-3-line"></i> <span id="countBox">0</span> items</div>
+      </div>
     </div>
-    <div class="mt-3" id="listBox"></div>
+
+    <div class="mt-4" id="listBox"></div>
   </div>
 </div>
 
 <script>
   function rupiah(n){ return 'Rp ' + (Number(n||0)).toLocaleString('id-ID'); }
   let DATA = [];
+  let CURRENT_IMAGE = null;
 
-  function card(p){
-    return `<div class="border rounded-2xl p-3 mb-2 hover:bg-slate-50">
-      <div class="flex items-center gap-3">
-        <div class="w-12 h-12 rounded-xl bg-slate-100 overflow-hidden flex items-center justify-center">
-          ${p.image ? `<img src="${p.image}" class="w-full h-full object-cover" />` : `<i class="ri-image-line text-slate-500 text-xl"></i>`}
-        </div>
-        <div class="flex-1">
-          <div class="font-bold">${p.name}</div>
-          <div class="text-xs text-slate-500">${p.sku} • ${p.price_type} • active:${p.active} • sort:${p.sort_order}</div>
-          <div class="text-sm">${p.price_type==='fixed' ? rupiah(p.price) : (rupiah(p.price_per_item) + ' /item')}</div>
-        </div>
-        <div class="flex gap-1">
-          <button class="btn-ghost js-edit" data-id="${p.id}"><i class="ri-pencil-line"></i></button>
-          <button class="btn-ghost js-del text-rose-600" data-id="${p.id}"><i class="ri-delete-bin-6-line"></i></button>
-        </div>
-      </div>
-    </div>`;
-  }
-
-  async function load(){
-    $('#listBox').html(RD.ui.skeletonCards(5));
-    try {
-      const resp = await $.ajax({
-        method:'GET',
-        url: window.__ADMIN_BASE + '/api/products',
-        headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
-      });
-      if (!resp.ok) throw new Error('Failed');
-      DATA = resp.data || [];
-      $('#listBox').html(DATA.map(card).join('') || `<div class="text-slate-500 text-sm">No products</div>`);
-
-      $('.js-edit').on('click', function(){
-        const p = DATA.find(x => x.id == $(this).data('id'));
-        if (!p) return;
-        $('#pid').val(p.id);
-        $('#sku').val(p.sku);
-        $('#name').val(p.name);
-        $('#game_name').val(p.game_name);
-        $('#price_type').val(p.price_type);
-        $('#price').val(p.price);
-        $('#price_per_item').val(p.price_per_item);
-        $('#active').val(String(p.active));
-        $('#sort_order').val(p.sort_order);
-        toastr.info('Loaded for edit (upload image jika mau ganti)');
-      });
-
-      $('.js-del').on('click', async function(){
-        const id = $(this).data('id');
-        if (!confirm('Delete product?')) return;
-        RD.ui.overlay(true);
-        try {
-          const resp = await $.ajax({
-            method:'DELETE',
-            url: window.__ADMIN_BASE + '/api/products/' + id,
-            headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
-          });
-          if (!resp.ok) throw new Error(resp.message || 'Failed');
-          toastr.success('Deleted');
-          load();
-        } catch(e) {
-          toastr.error(e.responseJSON?.message || e.message || 'Failed');
-        } finally {
-          RD.ui.overlay(false);
-        }
-      });
-
-    } catch(e) {
-      toastr.error(e.message || 'Failed load products');
-      $('#listBox').html(`<div class="text-rose-600 text-sm">Error</div>`);
+  function setMode(mode){
+    if(mode === 'edit'){
+      $('#modeBadge').removeClass('info').addClass('warn').html('<i class="ri-pencil-line"></i> edit');
+      $('#formTitle').text('Edit Product');
+      $('#formHint').text('Ubah data lalu klik Save. Upload image hanya jika mau ganti.');
+      $('#cancelEditBtn').show();
+    } else {
+      $('#modeBadge').removeClass('warn').addClass('info').html('<i class="ri-add-circle-line"></i> create');
+      $('#formTitle').text('Create Product');
+      $('#formHint').text('Isi data lalu klik Save.');
+      $('#cancelEditBtn').hide();
     }
   }
 
-  $('#reloadBtn').on('click', load);
-  $('#resetBtn').on('click', function(){
+  function resetForm(){
+    CURRENT_IMAGE = null;
     $('#pid').val('');
     $('#productForm')[0].reset();
     $('#game_name').val('Royal Dreams');
@@ -169,22 +153,212 @@
     $('#sort_order').val(0);
     $('#active').val('1');
     $('#price_type').val('fixed');
+    $('#image').val('');
+    $('#imgPreview').html('<i class="ri-image-line" style="font-size:26px;color:rgba(100,116,139,.9)"></i>');
+    setMode('create');
+    applyPriceTypeRules();
+  }
+
+  function applyPriceTypeRules(){
+    const t = $('#price_type').val();
+    if(t === 'fixed'){
+      $('#price').prop('disabled', false);
+      $('#price_per_item').prop('disabled', true);
+      $('#price_per_item').val(0);
+    } else {
+      $('#price').prop('disabled', true);
+      $('#price').val(0);
+      $('#price_per_item').prop('disabled', false);
+    }
+  }
+
+  function statusBadge(p){
+    const active = String(p.active) === '1';
+    return active
+      ? `<span class="badge good"><i class="ri-check-line"></i> active</span>`
+      : `<span class="badge bad"><i class="ri-close-line"></i> inactive</span>`;
+  }
+
+  function priceText(p){
+    return (p.price_type === 'fixed')
+      ? rupiah(p.price)
+      : (rupiah(p.price_per_item) + ' /item');
+  }
+
+  function itemCard(p){
+    const img = p.image
+      ? `<img src="${p.image}" class="w-full h-full object-cover" />`
+      : `<i class="ri-image-line" style="font-size:22px;color:rgba(100,116,139,.9)"></i>`;
+
+    return `
+      <div class="card soft" style="border-radius:22px;border:1px solid var(--line2);padding:12px;margin-bottom:12px;">
+        <div class="flex items-center gap-12px" style="gap:12px;">
+          <div class="scanline" style="width:56px;height:56px;border-radius:18px;border:1px solid var(--line);background:rgba(255,255,255,.85);overflow:hidden;display:flex;align-items:center;justify-content:center;">
+            ${img}
+          </div>
+
+          <div style="flex:1;min-width:0;">
+            <div class="flex items-center gap-2 flex-wrap">
+              <div class="font-extrabold truncate">${escapeHtml(p.name)}</div>
+              ${statusBadge(p)}
+              <span class="badge"><i class="ri-sort-asc"></i> ${p.sort_order}</span>
+              <span class="badge info"><i class="ri-price-tag-3-line"></i> ${p.price_type}</span>
+            </div>
+            <div class="text-xs text-slate-500 truncate" style="margin-top:4px;">
+              <b>${escapeHtml(p.sku)}</b> • ${escapeHtml(p.game_name || 'Royal Dreams')}
+            </div>
+            <div class="text-sm font-extrabold" style="margin-top:6px;">
+              ${priceText(p)}
+            </div>
+          </div>
+
+          <div class="td-actions" style="display:flex;gap:8px;align-items:center;">
+            <button class="btn btn-sm js-edit" data-id="${p.id}">
+              <i class="ri-pencil-line"></i> Edit
+            </button>
+            <button class="btn btn-sm btn-danger js-del" data-id="${p.id}">
+              <i class="ri-delete-bin-6-line"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function escapeHtml(s){
+    return String(s || '')
+      .replaceAll('&','&amp;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;')
+      .replaceAll('"','&quot;')
+      .replaceAll("'",'&#039;');
+  }
+
+  async function load(){
+    $('#listBox').html(RD.ui.skeletonBlocks(6));
+    try {
+      const resp = await $.ajax({
+        method:'GET',
+        url: window.__ADMIN_BASE + '/api/products',
+        headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
+      });
+      if (!resp.ok) throw new Error('Failed');
+
+      DATA = resp.data || [];
+      $('#countBox').text(DATA.length);
+
+      $('#listBox').html(
+        DATA.map(itemCard).join('') ||
+        `<div class="text-slate-500 text-sm">No products</div>`
+      );
+
+      // events (use delegation to avoid double bind)
+    } catch(e) {
+      toastr.error(e.message || 'Failed load products');
+      $('#listBox').html(`<div class="text-rose-600 text-sm">Error</div>`);
+    }
+  }
+
+  // Delegated edit/delete
+  $(document).off('click', '.js-edit').on('click', '.js-edit', function(){
+    const p = DATA.find(x => String(x.id) === String($(this).data('id')));
+    if (!p) return;
+
+    $('#pid').val(p.id);
+    $('#sku').val(p.sku);
+    $('#name').val(p.name);
+    $('#game_name').val(p.game_name || 'Royal Dreams');
+    $('#price_type').val(p.price_type);
+    $('#price').val(p.price);
+    $('#price_per_item').val(p.price_per_item);
+    $('#active').val(String(p.active));
+    $('#sort_order').val(p.sort_order);
+
+    CURRENT_IMAGE = p.image || null;
+    if (CURRENT_IMAGE){
+      $('#imgPreview').html(`<img src="${CURRENT_IMAGE}" class="w-full h-full object-cover" />`);
+    } else {
+      $('#imgPreview').html('<i class="ri-image-line" style="font-size:26px;color:rgba(100,116,139,.9)"></i>');
+    }
+
+    setMode('edit');
+    applyPriceTypeRules();
+    toastr.info('Loaded for edit (upload image jika mau ganti)');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
+  $(document).off('click', '.js-del').on('click', '.js-del', async function(){
+    const id = $(this).data('id');
+    if (!confirm('Delete product?')) return;
+    RD.ui.overlay(true);
+    try {
+      const resp = await $.ajax({
+        method:'DELETE',
+        url: window.__ADMIN_BASE + '/api/products/' + id,
+        headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
+      });
+      if (!resp.ok) throw new Error(resp.message || 'Failed');
+      toastr.success('Deleted');
+      if(String($('#pid').val()) === String(id)) resetForm();
+      load();
+    } catch(e) {
+      toastr.error(e.responseJSON?.message || e.message || 'Failed');
+    } finally {
+      RD.ui.overlay(false);
+    }
+  });
+
+  // Form interactions
+  $('#price_type').on('change', applyPriceTypeRules);
+
+  $('#image').on('change', function(){
+    const f = this.files && this.files[0];
+    if(!f){
+      if(CURRENT_IMAGE){
+        $('#imgPreview').html(`<img src="${CURRENT_IMAGE}" class="w-full h-full object-cover" />`);
+      } else {
+        $('#imgPreview').html('<i class="ri-image-line" style="font-size:26px;color:rgba(100,116,139,.9)"></i>');
+      }
+      return;
+    }
+    const url = URL.createObjectURL(f);
+    $('#imgPreview').html(`<img src="${url}" class="w-full h-full object-cover" />`);
+  });
+
+  $('#reloadBtn').on('click', load);
+  $('#reloadBtnTop').on('click', load);
+
+  $('#resetBtn').on('click', resetForm);
+  $('#resetBtnTop').on('click', function(){
+    resetForm();
+    toastr.info('New product mode');
+  });
+
+  $('#cancelEditBtn').on('click', function(){
+    resetForm();
+    toastr.info('Edit cancelled');
+  });
+
+  // Submit
   $('#productForm').on('submit', async function(e){
     e.preventDefault();
-    const id = $('#pid').val();
+
+    const id = ($('#pid').val() || '').trim();
     const fd = new FormData(this);
+
+    // Ensure price rules are respected
+    const pt = $('#price_type').val();
+    if(pt === 'fixed'){
+      fd.set('price_per_item', '0');
+    } else {
+      fd.set('price', '0');
+    }
 
     RD.ui.overlay(true);
     try {
       let url = window.__ADMIN_BASE + '/api/products';
       let method = 'POST';
-
-      if (id) {
-        url = window.__ADMIN_BASE + '/api/products/' + id;
-        method = 'PUT';
-      }
+      if (id) { url = window.__ADMIN_BASE + '/api/products/' + id; method = 'PUT'; }
 
       const resp = await $.ajax({
         url,
@@ -196,8 +370,9 @@
       });
 
       if (!resp.ok) throw new Error(resp.message || 'Failed');
+
       toastr.success('Saved');
-      $('#resetBtn').click();
+      resetForm();
       load();
     } catch(e) {
       toastr.error(e.responseJSON?.message || e.message || 'Failed');
@@ -206,5 +381,7 @@
     }
   });
 
+  // init
+  resetForm();
   load();
 </script>
