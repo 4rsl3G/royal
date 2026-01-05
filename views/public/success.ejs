@@ -1,23 +1,48 @@
-<div class="bg-white border rounded-2xl p-6 shadow-sm fade-up">
-  <div class="flex items-center gap-3">
-    <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
-      <i class="ri-check-line text-2xl"></i>
-    </div>
-    <div>
-      <div class="text-2xl font-extrabold">Pembayaran Berhasil</div>
-      <div class="text-slate-500 text-sm">Order akan diproses sesuai antrian.</div>
-    </div>
-  </div>
+<div class="max-w-xl mx-auto">
+  <div class="bg-white border border-(var(--border)) rounded-3xl p-6 md:p-8 shadow-sm"
+       data-aos="fade-up" data-aos-offset="30" data-aos-duration="800">
 
-  <div class="mt-4 bg-slate-50 border rounded-xl p-3">
-    <div class="text-xs text-slate-500">Order ID</div>
-    <div class="font-extrabold text-lg"><%= orderId %></div>
-  </div>
+    <!-- Header success -->
+    <div class="flex items-center gap-4">
+      <div class="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
+        <i class="ri-check-double-line text-3xl"></i>
+      </div>
+      <div class="min-w-0">
+        <h2 class="text-2xl md:text-3xl font-black tracking-tight truncate">Pembayaran Berhasil</h2>
+        <p class="text-(var(--muted)) text-sm md:text-base">Order kamu sedang diproses sesuai antrian admin.</p>
+      </div>
+    </div>
 
-  <div class="mt-4 flex flex-wrap gap-2">
-    <a class="btn-primary" href="/#\/order/<%= encodeURIComponent(orderId) %>">
-      <i class="ri-file-list-2-line"></i> Lihat Detail Order
-    </a>
-    <a class="btn-ghost" href="/#\/checkout"><i class="ri-shopping-cart-2-line"></i> Topup Lagi</a>
+    <!-- Order ID card -->
+    <div class="mt-6 bg-slate-50 border rounded-2xl p-4 md:p-5">
+      <div class="text-xs text-slate-500 font-bold uppercase tracking-wide">Order ID</div>
+      <div class="font-black text-xl md:text-2xl break-words"><%= orderId %></div>
+      <p class="mt-1 text-xs text-slate-500">Simpan ID ini untuk tracking jika diperlukan.</p>
+    </div>
+
+    <!-- CTA buttons -->
+    <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <a href="/#/order/<%= encodeURIComponent(orderId) %>"
+         class="btn-primary shimmer w-full justify-center">
+        <i class="ri-file-list-3-line text-lg"></i> Lihat Detail Order
+      </a>
+      <a href="/#/checkout"
+         class="btn-ghost shimmer w-full justify-center">
+        <i class="ri-repeat-line text-lg"></i> Topup Lagi
+      </a>
+    </div>
+
+    <!-- Footer note -->
+    <div class="mt-5 text-center text-xs text-slate-500">
+      Powered by Royal Dreams • Midtrans Payment Gateway
+    </div>
   </div>
 </div>
+
+<script>
+  // refresh AOS setiap kali partial dimuat
+  if (window.AOS) {
+    AOS.init({ once:false, mirror:true, offset:20 });
+    AOS.refreshHard();
+  }
+</script>
