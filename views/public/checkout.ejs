@@ -47,12 +47,12 @@
         </div>
       </div>
 
-      <div class="bg-slate-50 border rounded-xl p-3 flex items-center justify-between">
-        <div>
+      <div class="bg-slate-50 border rounded-xl p-3 flex items-center justify-between gap-3">
+        <div class="min-w-0">
           <div class="text-xs text-slate-500">Total</div>
           <div class="font-extrabold text-lg" id="totalText">Rp 0</div>
         </div>
-        <button type="submit" class="btn-primary">
+        <button type="submit" class="btn-primary shimmer">
           <i class="ri-secure-payment-line"></i> Bayar Sekarang
         </button>
       </div>
@@ -85,10 +85,21 @@
   function rupiah(n){ return 'Rp ' + (Number(n||0)).toLocaleString('id-ID'); }
 
   function computeTotal(){
-    const $opt = $('select[name=productId] option:selected');
-    const pt = $opt.data('price-type');
+    const $sel = $('select[name=productId]');
+    const val = String($sel.val() || '');
+
+    // belum pilih produk
+    if (!val) {
+      $('#totalText').text(rupiah(0));
+      $('input[name=qty]').val(1).prop('disabled', true);
+      return;
+    }
+
+    const $opt = $sel.find('option:selected');
+    const pt = String($opt.data('price-type') || '');
     const price = Number($opt.data('price') || 0);
     const ppi = Number($opt.data('ppi') || 0);
+
     let qty = Number($('input[name=qty]').val() || 1);
     if (!qty || qty < 1) qty = 1;
 
@@ -101,18 +112,36 @@
     }
   }
 
-  $('select[name=productId], input[name=qty]').on('change keyup', computeTotal);
+  // recompute whenever changes
+  $(document).off('change.rdCheckout keyup.rdCheckout');
+  $(document).on('change.rdCheckout', 'select[name=productId], input[name=qty]', computeTotal);
+  $(document).on('keyup.rdCheckout', 'input[name=qty]', computeTotal);
 
-  // restore selected product from localStorage
-  const saved = window.localStorage.getItem('rd_selected_product');
-  if (saved) {
-    $('select[name=productId]').val(saved);
+  // ✅ restore selected product from localStorage (Quick Buy)
+  (function restoreQuickBuy(){
+    const saved = window.localStorage.getItem('rd_selected_product');
+    if (!saved) return;
+
+    const $sel = $('select[name=productId]');
+    const exists = $sel.find(`option[value="${saved}"]`).length > 0;
+
+    if (exists) {
+      $sel.val(saved).trigger('change');
+      // optional: scroll to top checkout
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
     window.localStorage.removeItem('rd_selected_product');
-  }
+  })();
+
   computeTotal();
 
-  $('#checkoutForm').on('submit', async function(e){
+  $('#checkoutForm').off('submit.rdCheckout').on('submit.rdCheckout', async function(e){
     e.preventDefault();
+
+    // basic guard
+    const pid = String($('select[name=productId]').val() || '');
+    if (!pid) return toastr.error('Pilih produk dulu.');
+
     const form = $(this).serialize();
 
     RD.ui.overlay(true);
@@ -121,17 +150,17 @@
         method: 'POST',
         url: '/api/order/create',
         data: form,
-        headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
+        // ✅ public gunakan token dari meta via RD.csrf()
+        headers: { 'X-CSRF-Token': (window.RD && RD.csrf ? RD.csrf() : $('meta[name="csrf-token"]').attr('content')) }
       });
 
-      if (!resp.ok) throw new Error(resp.message || 'Gagal');
+      if (!resp || !resp.ok) throw new Error(resp?.message || 'Gagal membuat order');
 
       const orderId = resp.orderId;
       const token = resp.token;
 
       if (!window.snap) {
         toastr.error('Snap tidak ter-load. Cek CSP / client key.');
-        RD.ui.overlay(false);
         return;
       }
 
@@ -143,7 +172,7 @@
       });
 
     } catch (err) {
-      toastr.error(err.message || 'Gagal membuat order');
+      toastr.error(err.responseJSON?.message || err.message || 'Gagal membuat order');
     } finally {
       RD.ui.overlay(false);
     }
