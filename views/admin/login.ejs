@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Login Admin - <%= settings.site_name %></title>
+
+  <meta name="csrf-token" content="<%= csrfToken %>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/public/admin.css" />
+</head>
+<body class="font-[Inter] bg-slate-50 text-slate-900 min-h-screen flex items-center justify-center p-4">
+  <div class="w-full max-w-md">
+    <div class="bg-white border rounded-2xl p-6 shadow-sm">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-bold">RD</div>
+        <div>
+          <div class="text-xl font-extrabold">Admin Login</div>
+          <div class="text-sm text-slate-500"><%= settings.site_name %></div>
+        </div>
+      </div>
+
+      <form id="loginForm" class="mt-5 grid gap-3">
+        <div>
+          <label class="label">Username / Email</label>
+          <input name="username" class="input" autocomplete="username" required />
+        </div>
+        <div>
+          <label class="label">Password</label>
+          <input name="password" type="password" class="input" autocomplete="current-password" required />
+        </div>
+        <button class="btn-primary justify-center" type="submit">
+          <i class="ri-login-box-line"></i> Masuk
+        </button>
+      </form>
+
+      <div class="mt-4 text-xs text-slate-500">
+        URL Admin: <b><%= adminBasePath %></b>
+      </div>
+    </div>
+  </div>
+
+  <div id="overlay" class="hidden fixed inset-0 z-50 bg-black/30 backdrop-blur-sm">
+    <div class="absolute inset-0 flex items-center justify-center">
+      <div class="bg-white rounded-2xl px-5 py-4 shadow-lg flex items-center gap-3">
+        <div class="w-5 h-5 rounded-full border-2 border-slate-300 border-t-slate-900 animate-spin"></div>
+        <div class="text-sm font-semibold">Memproses…</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+  <script>
+    window.__CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    const ADMIN_BASE = "<%= adminBasePath %>";
+    function overlay(x){ $('#overlay').toggleClass('hidden', !x); }
+
+    $('#loginForm').on('submit', async function(e){
+      e.preventDefault();
+      overlay(true);
+      try {
+        const resp = await $.ajax({
+          method:'POST',
+          url: ADMIN_BASE + '/login',
+          data: $(this).serialize(),
+          headers: { 'X-CSRF-Token': window.__CSRF_TOKEN }
+        });
+        if (resp.ok) {
+          window.location.href = ADMIN_BASE;
+        } else {
+          toastr.error(resp.message || 'Login gagal');
+        }
+      } catch(err) {
+        toastr.error(err.responseJSON?.message || err.message || 'Login gagal');
+      } finally {
+        overlay(false);
+      }
+    });
+  </script>
+</body>
+</html>
