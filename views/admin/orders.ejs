@@ -24,13 +24,13 @@
         <div class="label">Pay Status</div>
         <select id="pay_status" class="select">
           <option value="">all</option>
-          <option>pending</option>
-          <option>settlement</option>
-          <option>capture</option>
-          <option>expire</option>
-          <option>cancel</option>
-          <option>deny</option>
-          <option>failure</option>
+          <option value="pending">pending</option>
+          <option value="settlement">settlement</option>
+          <option value="capture">capture</option>
+          <option value="expire">expire</option>
+          <option value="cancel">cancel</option>
+          <option value="deny">deny</option>
+          <option value="failure">failure</option>
         </select>
       </div>
 
@@ -54,74 +54,83 @@
   </div>
 </div>
 
+<!-- GRID WRAP -->
 <div class="mt-4 card card-pad fade-up">
   <div class="card-row">
-    <div class="font-extrabold text-lg">Orders</div>
-    <div class="pill"><i class="ri-database-2-line"></i> <span id="countBox">0</span> rows</div>
+    <div class="font-extrabold text-lg">Orders Grid</div>
+    <div class="pill"><i class="ri-database-2-line"></i> <span id="countBox">0</span> items</div>
   </div>
 
-  <div class="mt-4">
-    <table id="ordersTable" class="display" style="width:100%">
-      <thead>
-        <tr>
-          <th>Order</th>
-          <th>Produk</th>
-          <th>Customer</th>
-          <th>Amount</th>
-          <th>Pay</th>
-          <th>Fulfill</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+  <!-- scroll hanya di card list -->
+  <div class="mt-4 rd-orders-scroll">
+    <div id="ordersGridMount"></div>
+  </div>
+
+  <div class="mt-3 rd-grid-foot">
+    <div class="help" id="ordersHint">Menampilkan 5 per halaman. Gunakan search/filter di atas.</div>
   </div>
 </div>
 
 <!-- MODAL -->
-<div id="modal" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm">
-  <div class="rd-modal-wrap">
-    <div class="rd-modal-card card card-pad" style="width:100%;max-width:680px;">
-      <div class="card-row">
-        <div>
-          <div class="font-extrabold text-lg">Update Fulfill</div>
+<div id="modal" class="hidden">
+  <div class="rd-modal-backdrop" id="modalBackdrop"></div>
+
+  <div class="rd-modal-wrap" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="rd-modal-card">
+      <div class="rd-modal-head">
+        <div class="min-w-0">
+          <div class="font-extrabold text-lg" id="modalTitle">Update Fulfill</div>
           <div class="text-sm text-slate-500">Update status + admin note (dipakai template WA).</div>
         </div>
-        <button class="btn btn-ghost" id="closeModal"><i class="ri-close-line"></i></button>
+        <button class="btn btn-ghost" id="closeModal" aria-label="Close"><i class="ri-close-line"></i></button>
       </div>
 
-      <div class="mt-4 grid md:grid-cols-2 gap-3">
-        <div class="card soft card-pad" style="border-radius:18px;border:1px solid var(--line2);">
-          <div class="text-xs text-slate-500">Order ID</div>
-          <div class="font-extrabold mt-1 break-anywhere" id="mOrderId">-</div>
-          <div class="text-xs text-slate-500 mt-2">Pay</div>
-          <div class="mt-1" id="mPayBadge">-</div>
-          <div class="text-xs text-slate-500 mt-2">Gross</div>
-          <div class="font-extrabold mt-1" id="mGross">-</div>
-        </div>
+      <div class="rd-modal-body">
+        <div class="grid md:grid-cols-2 gap-3">
+          <div class="card soft card-pad" style="border-radius:18px;border:1px solid var(--line2);">
+            <div class="text-xs text-slate-500">Order ID</div>
+            <div class="font-extrabold mt-1 break-anywhere" id="mOrderId">-</div>
 
-        <div class="card soft card-pad" style="border-radius:18px;border:1px solid var(--line2);">
-          <div class="label">Fulfill Status</div>
-          <select id="mFulfill" class="select">
-            <option value="waiting">waiting</option>
-            <option value="processing">processing</option>
-            <option value="done">done</option>
-            <option value="rejected">rejected</option>
-          </select>
+            <div class="text-xs text-slate-500 mt-3">Pay</div>
+            <div class="mt-1" id="mPayBadge">-</div>
 
-          <div class="label mt-3">Admin Note</div>
-          <textarea id="mNote" class="textarea" rows="4" placeholder="Catatan untuk customer (dipakai di template WA)"></textarea>
+            <div class="text-xs text-slate-500 mt-3">Gross</div>
+            <div class="font-extrabold mt-1" id="mGross">-</div>
 
-          <div class="mt-3">
-            <button class="btn btn-primary shimmer btn-block" id="saveBtn">
-              <i class="ri-save-3-line"></i> Simpan
-            </button>
+            <div class="text-xs text-slate-500 mt-3">Customer</div>
+            <div class="mt-1">
+              <div class="font-extrabold break-anywhere" id="mGameId">-</div>
+              <div class="text-xs text-slate-500 break-anywhere" id="mWA">-</div>
+            </div>
+          </div>
+
+          <div class="card soft card-pad" style="border-radius:18px;border:1px solid var(--line2);">
+            <div class="label">Fulfill Status</div>
+            <select id="mFulfill" class="select">
+              <option value="waiting">waiting</option>
+              <option value="processing">processing</option>
+              <option value="done">done</option>
+              <option value="rejected">rejected</option>
+            </select>
+
+            <div class="label mt-3">Admin Note</div>
+            <textarea id="mNote" class="textarea" rows="5" placeholder="Catatan untuk customer (dipakai di template WA)"></textarea>
+
+            <div class="mt-3">
+              <button class="btn btn-primary shimmer btn-block" id="saveBtn">
+                <i class="ri-save-3-line"></i> Simpan
+              </button>
+            </div>
+
+            <div class="mt-3 help">
+              Saran: set “processing” saat mulai pengerjaan. “done”/“rejected” akan memicu template WA (jika enabled).
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="mt-3 help">
-        Saran: set “processing” saat mulai pengerjaan. “done”/“rejected” akan memicu template WA (jika enabled + connected).
+      <div class="rd-modal-foot">
+        <button class="btn btn-ghost" id="closeModal2"><i class="ri-close-line"></i> Tutup</button>
       </div>
     </div>
   </div>
