@@ -1,15 +1,10 @@
+// public/admin.js (UPDATED - auto-load /public/order.js only on Orders page)
 window.RD = window.RD || {};
 
 (function () {
-  // =========================
-  // UI helpers
-  // =========================
   RD.ui = {
-    overlay(on) {
-      $('#overlay').toggleClass('hidden', !on);
-    },
+    overlay(on) { $('#overlay').toggleClass('hidden', !on); },
 
-    // Table skeleton rows
     skeletonTableRows(targetSel, cols = 7, rows = 8) {
       let html = '';
       for (let i = 0; i < rows; i++) {
@@ -23,7 +18,6 @@ window.RD = window.RD || {};
       $(targetSel).html(html);
     },
 
-    // Card skeleton blocks
     skeletonBlocks(n = 4) {
       let html = '';
       for (let i = 0; i < n; i++) {
@@ -32,7 +26,6 @@ window.RD = window.RD || {};
       return html;
     },
 
-    // Page skeleton (generic)
     skeletonPage() {
       return `
         <div class="skeleton" style="height:34px;border-radius:18px;"></div>
@@ -41,7 +34,6 @@ window.RD = window.RD || {};
       `;
     },
 
-    // Nice transition effect after load (AOS-ish)
     animateIn($el) {
       $el.css({ opacity: 0, transform: 'translateY(10px)' });
       setTimeout(() => {
@@ -58,83 +50,9 @@ window.RD = window.RD || {};
       err(m) { toastr.error(m || 'Terjadi kesalahan'); },
       info(m) { toastr.info(m || ''); },
       warn(m) { toastr.warning(m || ''); }
-    },
-
-    // =========================
-    // Modal helpers (for #modal + rd-modal classes in CSS)
-    // =========================
-    modal: {
-      _lockY: 0,
-      _locked: false,
-
-      _lockBody() {
-        if (this._locked) return;
-        this._locked = true;
-
-        // iOS-friendly scroll lock
-        this._lockY = window.scrollY || window.pageYOffset || 0;
-        document.body.classList.add('modal-open');
-        document.body.style.position = 'fixed';
-        document.body.style.top = `-${this._lockY}px`;
-        document.body.style.left = '0';
-        document.body.style.right = '0';
-        document.body.style.width = '100%';
-      },
-
-      _unlockBody() {
-        if (!this._locked) return;
-        this._locked = false;
-
-        document.body.classList.remove('modal-open');
-        document.body.style.position = '';
-        document.body.style.top = '';
-        document.body.style.left = '';
-        document.body.style.right = '';
-        document.body.style.width = '';
-
-        window.scrollTo(0, this._lockY || 0);
-        this._lockY = 0;
-      },
-
-      open(sel = '#modal') {
-        const $m = $(sel);
-        if (!$m.length) return;
-
-        this._lockBody();
-
-        // show element first
-        $m.removeClass('hidden rd-modal-hide').addClass('rd-modal-show');
-
-        // reset scroll container to top (if exists)
-        const wrap = $m.find('.rd-modal-wrap')[0];
-        if (wrap) wrap.scrollTop = 0;
-      },
-
-      close(sel = '#modal') {
-        const $m = $(sel);
-        if (!$m.length) return;
-
-        // play close animation
-        $m.removeClass('rd-modal-show').addClass('rd-modal-hide');
-
-        // after transition end, hide + unlock body
-        // match CSS transition (.18s) with a small buffer
-        setTimeout(() => {
-          $m.addClass('hidden').removeClass('rd-modal-hide');
-          this._unlockBody();
-        }, 220);
-      },
-
-      isOpen(sel = '#modal') {
-        const $m = $(sel);
-        return $m.length && !$m.hasClass('hidden');
-      }
     }
   };
 
-  // =========================
-  // Utils
-  // =========================
   RD.util = {
     debounce(fn, wait) {
       let t;
@@ -142,12 +60,27 @@ window.RD = window.RD || {};
         clearTimeout(t);
         t = setTimeout(() => fn.apply(this, args), wait);
       };
+    },
+
+    loadScriptOnce(src) {
+      RD.__loadedScripts = RD.__loadedScripts || {};
+      if (RD.__loadedScripts[src]) return RD.__loadedScripts[src];
+
+      RD.__loadedScripts[src] = new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = src;
+        s.async = true;
+        s.onload = () => resolve(true);
+        s.onerror = () => reject(new Error('Failed load script: ' + src));
+        document.head.appendChild(s);
+      });
+
+      return RD.__loadedScripts[src];
     }
   };
 
-  // =========================
-  // Router (Admin SPA)
-  // =========================
+  RD.pages = RD.pages || {};
+
   RD.router = (() => {
     let leaveHandlers = [];
 
@@ -158,19 +91,44 @@ window.RD = window.RD || {};
       leaveHandlers = [];
     }
 
+    async function mountPage($content) {
+      const pageEl = $content.find('[data-admin-page]').first();
+      const page = pageEl.data('admin-page');
+
+      if (!page) return;
+
+      // Only load order.js on orders page
+      if (page === 'orders') {
+        const url = '/public/order.js?v=' + encodeURIComponent(window.__ASSET_V || '1');
+        try {
+          await RD.util.loadScriptOnce(url);
+        } catch (e) {
+          RD.ui.toast.err('Gagal memuat order.js');
+          return;
+        }
+      }
+
+      // call mount if exists
+      if (RD.pages[page] && typeof RD.pages[page].mount === 'function') {
+        RD.pages[page].mount();
+        // auto unmount on route leave
+        if (typeof RD.pages[page].unmount === 'function') {
+          RD.router.onLeave(() => RD.pages[page].unmount());
+        }
+      }
+    }
+
     async function loadPartial(url) {
       const $content = $('#admin-content');
       $content.html(RD.ui.skeletonPage());
 
-      // kalau pindah route saat modal terbuka, tutup rapi
-      if (RD.ui.modal.isOpen('#modal')) RD.ui.modal.close('#modal');
-
       try {
         const html = await $.ajax({ method: 'GET', url });
-
         $content.html(html);
         $content.addClass('fade-up');
         RD.ui.animateIn($content);
+
+        await mountPage($content);
 
       } catch (e) {
         RD.ui.toast.err('Gagal memuat halaman admin.');
@@ -186,9 +144,7 @@ window.RD = window.RD || {};
           </div>
         `);
 
-        $(document).off('click', '#btn-admin-retry').on('click', '#btn-admin-retry', () => {
-          loadPartial(url);
-        });
+        $(document).off('click', '#btn-admin-retry').on('click', '#btn-admin-retry', () => loadPartial(url));
       }
     }
 
@@ -225,25 +181,8 @@ window.RD = window.RD || {};
     return { init, onLeave };
   })();
 
-  // =========================
-  // Global UX: ESC close modal
-  // =========================
-  $(document).on('keydown', function (e) {
-    if (e.key === 'Escape' && RD.ui.modal.isOpen('#modal')) {
-      RD.ui.modal.close('#modal');
-    }
-  });
-
-  // =========================
-  // Boot
-  // =========================
   $(function () {
-    toastr.options = {
-      closeButton: true,
-      newestOnTop: true,
-      progressBar: true,
-      timeOut: 2500
-    };
+    toastr.options = { closeButton: true, newestOnTop: true, progressBar: true, timeOut: 2500 };
     RD.router.init();
   });
 
