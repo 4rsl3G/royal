@@ -42,16 +42,33 @@
     }
   };
 
+  // Normalize href "/#/checkout" or "/#\/checkout" -> "#/checkout"
+  function normalizeHashFromHref(href) {
+    if (!href) return '';
+    // "/#/home" -> "#/home"
+    if (href.startsWith('/#/')) return '#' + href.slice(2);
+    // "/#\/home" -> "#/home"
+    if (href.startsWith('/#\\/')) return '#/' + href.split('/#\\/')[1];
+    // "#/home" -> "#/home"
+    if (href.startsWith('#/')) return href;
+    return '';
+  }
+
   function setActiveNavByHash() {
     const hash = location.hash || '#/home';
     $('.nav-link').removeClass('active');
 
-    if (hash.startsWith('#/home')) $('[href="/#\\/home"]').addClass('active');
-    else if (hash.startsWith('#/products')) $('[href="/#\\/products"]').addClass('active');
-    else if (hash.startsWith('#/checkout')) $('[href="/#\\/checkout"]').addClass('active');
-    else if (hash.startsWith('#/order')) $('[href="/#\\/checkout"]').addClass('active');
-    else if (hash.startsWith('#/success')) $('[href="/#\\/checkout"]').addClass('active');
-    else if (hash.startsWith('#/failed')) $('[href="/#\\/checkout"]').addClass('active');
+    // Support both new & old href formats
+    const selHome = '[href="/#/home"],[href="/#\\\\/home"]';
+    const selProducts = '[href="/#/products"],[href="/#\\\\/products"]';
+    const selCheckout = '[href="/#/checkout"],[href="/#\\\\/checkout"]';
+
+    if (hash.startsWith('#/home')) $(selHome).addClass('active');
+    else if (hash.startsWith('#/products')) $(selProducts).addClass('active');
+    else if (hash.startsWith('#/checkout')) $(selCheckout).addClass('active');
+    else if (hash.startsWith('#/order')) $(selCheckout).addClass('active');
+    else if (hash.startsWith('#/success')) $(selCheckout).addClass('active');
+    else if (hash.startsWith('#/failed')) $(selCheckout).addClass('active');
   }
 
   function initAOS() {
@@ -93,7 +110,6 @@
 
   function route() {
     const hash = location.hash || '#/home';
-
     if (hash === '#/' || hash === '#') return (location.hash = '#/home');
 
     if (hash.startsWith('#/home')) return loadPartial('/home');
@@ -134,8 +150,23 @@
   $(document).on('click', '#btn-menu', openDrawer);
   $(document).on('click', '#btn-close-drawer, #drawer .drawer-backdrop', closeDrawer);
 
-  $(document).on('click', 'a[href^="/#/"]', function () {
+  // ✅ IMPORTANT: make hash links behave SPA (no full reload)
+  $(document).on('click', 'a[href^="/#/"], a[href^="/#\\/"], a[href^="#/"]', function (e) {
+    const href = $(this).attr('href');
+    const hash = normalizeHashFromHref(href);
+
+    // External or normal link -> allow default
+    if (!hash) return;
+
+    e.preventDefault();
     closeDrawer();
+
+    if (location.hash !== hash) {
+      location.hash = hash;
+    } else {
+      // jika sama, tetap refresh partial supaya aman
+      route();
+    }
   });
 
   window.addEventListener('hashchange', route);
