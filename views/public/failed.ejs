@@ -1,23 +1,102 @@
-<div class="bg-white border rounded-2xl p-6 shadow-sm fade-up">
-  <div class="flex items-center gap-3">
-    <div class="w-12 h-12 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center">
-      <i class="ri-close-line text-2xl"></i>
-    </div>
-    <div>
-      <div class="text-2xl font-extrabold">Pembayaran Gagal / Expired</div>
-      <div class="text-slate-500 text-sm">Kamu bisa coba lagi dengan membuat order baru.</div>
-    </div>
-  </div>
+<div class="max-w-xl mx-auto">
+  <div class="bg-white border border-(var(--border)) rounded-3xl p-6 md:p-8 shadow-sm"
+       data-aos="fade-up" data-aos-offset="30" data-aos-duration="800">
 
-  <div class="mt-4 bg-slate-50 border rounded-xl p-3">
-    <div class="text-xs text-slate-500">Order ID</div>
-    <div class="font-extrabold text-lg"><%= orderId %></div>
-  </div>
+    <!-- Header failed -->
+    <div class="flex items-center gap-4">
+      <div class="w-14 h-14 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center flex-shrink-0">
+        <i class="ri-close-circle-line text-3xl"></i>
+      </div>
+      <div class="min-w-0">
+        <h2 class="text-2xl md:text-3xl font-black tracking-tight truncate">Pembayaran Belum Berhasil</h2>
+        <p class="text-(var(--muted)) text-sm md:text-base">
+          Kamu bisa coba bayar lagi atau kembali ke detail order untuk cek status terbaru.
+        </p>
+      </div>
+    </div>
 
-  <div class="mt-4 flex flex-wrap gap-2">
-    <a class="btn-ghost" href="/#\/order/<%= encodeURIComponent(orderId) %>">
-      <i class="ri-file-list-2-line"></i> Lihat Detail
-    </a>
-    <a class="btn-primary" href="/#\/checkout"><i class="ri-shopping-cart-2-line"></i> Buat Order Baru</a>
+    <!-- Info box -->
+    <div class="mt-6 bg-slate-50 border rounded-2xl p-4 md:p-5">
+      <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0">
+          <div class="text-xs text-slate-500 font-bold uppercase tracking-wide">Order ID</div>
+          <div class="font-black text-xl md:text-2xl break-words" id="oid"><%= orderId %></div>
+          <p class="mt-1 text-xs text-slate-500">
+            Jika kamu sudah bayar tapi halaman ini muncul, cek detail order—status bisa update beberapa saat.
+          </p>
+        </div>
+
+        <button type="button" id="copyBtn"
+                class="btn-ghost justify-center whitespace-nowrap"
+                style="padding:10px 12px; border-radius:14px;">
+          <i class="ri-file-copy-line"></i>
+          Copy
+        </button>
+      </div>
+    </div>
+
+    <!-- Troubleshooting tips -->
+    <div class="mt-5 grid gap-2 text-sm text-slate-600">
+      <div class="flex items-start gap-2">
+        <i class="ri-wifi-warning-line mt-0.5"></i>
+        <div>Pastikan koneksi stabil dan tidak menutup Snap terlalu cepat.</div>
+      </div>
+      <div class="flex items-start gap-2">
+        <i class="ri-bank-card-line mt-0.5"></i>
+        <div>Jika pakai VA/QRIS, cek kembali apakah transaksi sudah selesai di aplikasi pembayaran.</div>
+      </div>
+      <div class="flex items-start gap-2">
+        <i class="ri-refresh-line mt-0.5"></i>
+        <div>Kalau status masih pending, biasanya bisa dilanjutkan tanpa buat order baru.</div>
+      </div>
+    </div>
+
+    <!-- CTA buttons -->
+    <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <a href="/#/order/<%= encodeURIComponent(orderId) %>"
+         class="btn-primary shimmer w-full justify-center">
+        <i class="ri-file-list-3-line text-lg"></i> Cek Detail Order
+      </a>
+      <a href="/#/checkout"
+         class="btn-ghost shimmer w-full justify-center">
+        <i class="ri-repeat-2-line text-lg"></i> Coba Bayar Lagi
+      </a>
+    </div>
+
+    <!-- Footer note -->
+    <div class="mt-5 text-center text-xs text-slate-500">
+      Jika butuh bantuan, kirim Order ID ke admin.
+    </div>
   </div>
 </div>
+
+<script>
+  // AOS refresh setiap partial dimuat
+  if (window.AOS) {
+    AOS.init({ once:false, mirror:true, offset:20 });
+    AOS.refreshHard();
+  }
+
+  // Copy Order ID
+  (function(){
+    const btn = document.getElementById('copyBtn');
+    const oid = document.getElementById('oid');
+    if (!btn || !oid) return;
+
+    btn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(oid.textContent.trim());
+        if (window.toastr) toastr.success('Order ID copied');
+      } catch (e) {
+        // fallback
+        const t = document.createElement('textarea');
+        t.value = oid.textContent.trim();
+        document.body.appendChild(t);
+        t.select();
+        document.execCommand('copy');
+        document.body.removeChild(t);
+        if (window.toastr) toastr.success('Order ID copied');
+      }
+    });
+  })();
+</script>
