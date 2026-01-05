@@ -3,76 +3,153 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title><%= settings.site_name %> - Topup</title>
-
   <meta name="csrf-token" content="<%= csrfToken %>" />
+  <title><%= settings.site_name || 'Royal Dreams' %> - Topup Chip</title>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <!-- Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
 
-  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css" rel="stylesheet" />
+  <!-- RemixIcon -->
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css" rel="stylesheet">
+
+  <!-- Toastr -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css"/>
 
+  <!-- AOS -->
+  <link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css"/>
+
+  <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
 
+  <!-- App CSS -->
   <link rel="stylesheet" href="/public/app.css" />
 </head>
-<body class="font-[Inter] bg-slate-50 text-slate-900">
-  <!-- topbar -->
-  <header class="sticky top-0 z-30 bg-white/80 backdrop-blur border-b">
-    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-      <a href="/#/" class="flex items-center gap-2">
-        <div class="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold">RD</div>
-        <div>
-          <div class="font-bold leading-tight"><%= settings.site_name %></div>
-          <div class="text-xs text-slate-500"><%= settings.brand_tagline %></div>
+
+<body class="min-h-screen bg-slate-50 text-slate-900">
+  <!-- Overlay Loading -->
+  <div id="overlay-loading" class="overlay hidden">
+    <div class="overlay-card">
+      <div class="spinner"></div>
+      <div class="mt-3 text-sm text-slate-600 font-semibold">Memproses...</div>
+    </div>
+  </div>
+
+  <!-- Top Glow Background -->
+  <div class="page-bg">
+    <div class="page-blob b1"></div>
+    <div class="page-blob b2"></div>
+    <div class="page-blob b3"></div>
+  </div>
+
+  <!-- Navbar -->
+  <header class="rd-nav">
+    <div class="nav-inner">
+      <a href="/#\/home" class="brand">
+        <div class="brand-logo">
+          <span>RD</span>
+        </div>
+        <div class="brand-text">
+          <div class="brand-name"><%= settings.site_name || 'Royal Dreams' %></div>
+          <div class="brand-tag"><%= settings.brand_tagline || 'Cepat, aman, dan resmi.' %></div>
         </div>
       </a>
-      <nav class="flex items-center gap-2">
-        <a href="/#\/home" class="px-3 py-2 rounded-lg hover:bg-slate-100 text-sm">Home</a>
-        <a href="/#\/products" class="px-3 py-2 rounded-lg hover:bg-slate-100 text-sm">Produk</a>
-        <a href="/#\/checkout" class="px-3 py-2 rounded-lg bg-slate-900 text-white text-sm">Checkout</a>
+
+      <nav class="nav-links">
+        <a class="nav-link" href="/#\/home">Home</a>
+        <a class="nav-link" href="/#\/products">Produk</a>
+        <a class="nav-link" href="/#\/checkout">Checkout</a>
       </nav>
+
+      <div class="nav-actions">
+        <a href="/#\/checkout" class="nav-cta">
+          <i class="ri-flashlight-line"></i>
+          Topup
+        </a>
+
+        <button id="btn-menu" class="nav-burger" aria-label="Menu">
+          <i class="ri-menu-3-line"></i>
+        </button>
+      </div>
     </div>
   </header>
 
-  <main class="max-w-6xl mx-auto px-4 py-6">
-    <div id="app-content"></div>
-  </main>
-
-  <footer class="border-t bg-white">
-    <div class="max-w-6xl mx-auto px-4 py-8 text-sm text-slate-600 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-      <div>© <%= new Date().getFullYear() %> <%= settings.site_name %>. All rights reserved.</div>
-      <div class="flex items-center gap-3">
-        <a class="hover:text-slate-900" href="/#\/home">Home</a>
-        <a class="hover:text-slate-900" href="/#\/products">Produk</a>
-        <a class="hover:text-slate-900" href="/#\/checkout">Checkout</a>
+  <!-- Mobile Drawer -->
+  <div id="drawer" class="drawer hidden">
+    <div class="drawer-backdrop"></div>
+    <div class="drawer-panel">
+      <div class="drawer-top">
+        <div class="flex items-center gap-3">
+          <div class="brand-logo sm">
+            <span>RD</span>
+          </div>
+          <div class="min-w-0">
+            <div class="text-sm font-extrabold truncate"><%= settings.site_name || 'Royal Dreams' %></div>
+            <div class="text-xs text-slate-500 truncate"><%= settings.brand_tagline || '' %></div>
+          </div>
+        </div>
+        <button id="btn-close-drawer" class="drawer-close" aria-label="Tutup">
+          <i class="ri-close-line"></i>
+        </button>
       </div>
-    </div>
-  </footer>
 
-  <!-- overlay loading -->
-  <div id="overlay" class="hidden fixed inset-0 z-50 bg-black/30 backdrop-blur-sm">
-    <div class="absolute inset-0 flex items-center justify-center">
-      <div class="bg-white rounded-2xl px-5 py-4 shadow-lg flex items-center gap-3">
-        <div class="w-5 h-5 rounded-full border-2 border-slate-300 border-t-slate-900 animate-spin"></div>
-        <div class="text-sm font-semibold">Memproses…</div>
+      <div class="drawer-links">
+        <a class="drawer-link" href="/#\/home"><i class="ri-home-5-line"></i> Home</a>
+        <a class="drawer-link" href="/#\/products"><i class="ri-store-2-line"></i> Produk</a>
+        <a class="drawer-link" href="/#\/checkout"><i class="ri-shopping-cart-2-line"></i> Checkout</a>
+      </div>
+
+      <div class="drawer-bottom">
+        <a href="/#\/checkout" class="btn-primary shimmer w-full justify-center">
+          <i class="ri-flashlight-line"></i> Mulai Topup
+        </a>
+        <div class="mt-3 text-xs text-slate-500 text-center">
+          Pembayaran via Midtrans • UI realtime • Notifikasi WhatsApp
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Midtrans Snap -->
-  <script
-    src="<%= snapUrl %>"
-    data-client-key="<%= midtransClientKey %>"></script>
+  <!-- Main -->
+  <main class="max-w-6xl mx-auto px-4 md:px-6 pb-16">
+    <!-- Content from AJAX -->
+    <div id="app-content" class="pt-6"></div>
+  </main>
 
-  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <!-- Footer -->
+  <footer class="max-w-6xl mx-auto px-4 md:px-6 pb-10 text-sm text-slate-500">
+    <div class="footer-card">
+      <div class="flex items-center justify-between gap-4 flex-wrap">
+        <div class="font-semibold">© <%= new Date().getFullYear() %> <%= settings.site_name || 'Royal Dreams' %></div>
+        <div class="flex gap-4">
+          <a href="/#\/home" class="hover:text-slate-900">Home</a>
+          <a href="/#\/products" class="hover:text-slate-900">Produk</a>
+          <a href="/#\/checkout" class="hover:text-slate-900">Checkout</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- jQuery -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+
+  <!-- Toastr -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 
-  <script>
-    window.__CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-  </script>
+  <!-- Midtrans Snap -->
+  <%
+  const isProd = String(settings.midtrans_is_production || 'false') === 'true';
+  const snapSrc = isProd
+    ? 'https://app.midtrans.com/snap/snap.js'
+    : 'https://app.sandbox.midtrans.com/snap/snap.js';
+%>
+<script src="<%= snapSrc %>" data-client-key="<%= settings.midtrans_client_key || '' %>"></script>
+
+  <!-- AOS -->
+  <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+
+  <!-- App JS -->
   <script src="/public/app.js"></script>
 </body>
 </html>
