@@ -7,41 +7,124 @@
 
   <meta name="csrf-token" content="<%= csrfToken %>" />
 
+  <!-- Cache bust -->
+  <%
+    const ASSET_V = (settings && settings.assets_version) ? String(settings.assets_version) : '1';
+  %>
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 
   <link href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css"/>
 
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="/public/admin.css" />
+
+  <!-- Admin CSS -->
+  <link rel="stylesheet" href="/public/admin.css?v=<%= ASSET_V %>" />
 </head>
+
 <body class="font-[Inter] bg-slate-50 text-slate-900">
-  <header class="sticky top-0 z-30 bg-white/80 backdrop-blur border-b">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold">RD</div>
-        <div>
-          <div class="font-bold leading-tight">Admin Panel</div>
-          <div class="text-xs text-slate-500">Login as <b><%= admin.username %></b> (<%= admin.role %>)</div>
+
+  <!-- Topbar -->
+  <header class="sticky top-0 z-40 bg-white/75 backdrop-blur border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+      <!-- Left / Brand -->
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="w-11 h-11 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-extrabold shadow-sm">
+          RD
+        </div>
+        <div class="min-w-0">
+          <div class="font-extrabold leading-tight truncate">Admin Panel</div>
+          <div class="text-xs text-slate-500 truncate">
+            Login as <b class="text-slate-700"><%= admin.username %></b>
+            <span class="text-slate-400">•</span>
+            <span class="font-semibold"><%= admin.role %></span>
+          </div>
         </div>
       </div>
-      <nav class="flex items-center gap-1 flex-wrap">
-        <a href="<%= adminBasePath %>#/dashboard" class="navbtn">Dashboard</a>
-        <a href="<%= adminBasePath %>#/orders" class="navbtn">Orders</a>
-        <a href="<%= adminBasePath %>#/products" class="navbtn">Products</a>
-        <a href="<%= adminBasePath %>#/settings" class="navbtn">Settings</a>
-        <a href="<%= adminBasePath %>#/whatsapp" class="navbtn">WhatsApp</a>
-        <a href="<%= adminBasePath %>/logout" class="navbtn text-rose-600">Logout</a>
+
+      <!-- Desktop Nav -->
+      <nav class="hidden md:flex items-center gap-2 flex-wrap">
+        <a href="<%= adminBasePath %>#/dashboard" class="navbtn" data-nav="dashboard"><i class="ri-dashboard-2-line"></i><span>Dashboard</span></a>
+        <a href="<%= adminBasePath %>#/orders" class="navbtn" data-nav="orders"><i class="ri-file-list-3-line"></i><span>Orders</span></a>
+        <a href="<%= adminBasePath %>#/products" class="navbtn" data-nav="products"><i class="ri-store-2-line"></i><span>Products</span></a>
+        <a href="<%= adminBasePath %>#/settings" class="navbtn" data-nav="settings"><i class="ri-settings-3-line"></i><span>Settings</span></a>
+        <a href="<%= adminBasePath %>#/whatsapp" class="navbtn" data-nav="whatsapp"><i class="ri-whatsapp-line"></i><span>WhatsApp</span></a>
+        <a href="<%= adminBasePath %>/logout" class="navbtn navbtn-danger"><i class="ri-logout-box-r-line"></i><span>Logout</span></a>
       </nav>
+
+      <!-- Mobile actions -->
+      <div class="md:hidden flex items-center gap-2">
+        <a href="<%= adminBasePath %>#/dashboard" class="iconbtn" aria-label="Dashboard">
+          <i class="ri-dashboard-2-line"></i>
+        </a>
+        <button id="btn-admin-menu" class="iconbtn" aria-label="Menu">
+          <i class="ri-menu-3-line"></i>
+        </button>
+      </div>
     </div>
   </header>
 
+  <!-- Mobile Drawer -->
+  <div id="admin-drawer" class="hidden fixed inset-0 z-50">
+    <div class="absolute inset-0 bg-black/35 backdrop-blur-sm" id="admin-drawer-backdrop"></div>
+
+    <div class="absolute top-0 right-0 h-full w-[86%] max-w-sm bg-white shadow-2xl border-l border-slate-200">
+      <div class="p-4 border-b border-slate-200 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-10 h-10 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-extrabold">
+            RD
+          </div>
+          <div class="min-w-0">
+            <div class="font-extrabold leading-tight truncate">Admin Panel</div>
+            <div class="text-xs text-slate-500 truncate">
+              <%= admin.username %> • <%= admin.role %>
+            </div>
+          </div>
+        </div>
+
+        <button id="btn-admin-close" class="iconbtn" aria-label="Close">
+          <i class="ri-close-line"></i>
+        </button>
+      </div>
+
+      <div class="p-4">
+        <div class="grid grid-cols-2 gap-2">
+          <a href="<%= adminBasePath %>#/dashboard" class="drawerbtn" data-nav="dashboard">
+            <i class="ri-dashboard-2-line"></i> Dashboard
+          </a>
+          <a href="<%= adminBasePath %>#/orders" class="drawerbtn" data-nav="orders">
+            <i class="ri-file-list-3-line"></i> Orders
+          </a>
+          <a href="<%= adminBasePath %>#/products" class="drawerbtn" data-nav="products">
+            <i class="ri-store-2-line"></i> Products
+          </a>
+          <a href="<%= adminBasePath %>#/settings" class="drawerbtn" data-nav="settings">
+            <i class="ri-settings-3-line"></i> Settings
+          </a>
+          <a href="<%= adminBasePath %>#/whatsapp" class="drawerbtn" data-nav="whatsapp">
+            <i class="ri-whatsapp-line"></i> WhatsApp
+          </a>
+          <a href="<%= adminBasePath %>/logout" class="drawerbtn drawerbtn-danger">
+            <i class="ri-logout-box-r-line"></i> Logout
+          </a>
+        </div>
+
+        <div class="mt-4 text-xs text-slate-500 leading-relaxed">
+          Tip: gunakan menu <b>WhatsApp</b> untuk pairing (QR / pairing code), lalu aktifkan template notifikasi di <b>Settings</b>.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main -->
   <main class="max-w-7xl mx-auto px-4 py-6">
     <div id="admin-content"></div>
   </main>
 
+  <!-- Overlay Loading -->
   <div id="overlay" class="hidden fixed inset-0 z-50 bg-black/30 backdrop-blur-sm">
     <div class="absolute inset-0 flex items-center justify-center">
       <div class="bg-white rounded-2xl px-5 py-4 shadow-lg flex items-center gap-3">
@@ -51,12 +134,49 @@
     </div>
   </div>
 
+  <!-- Scripts -->
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+
   <script>
     window.__CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     window.__ADMIN_BASE = "<%= adminBasePath %>";
+
+    // Mobile drawer
+    (function(){
+      function openDrawer(){ $('#admin-drawer').removeClass('hidden'); }
+      function closeDrawer(){ $('#admin-drawer').addClass('hidden'); }
+
+      $(document).on('click', '#btn-admin-menu', openDrawer);
+      $(document).on('click', '#btn-admin-close, #admin-drawer-backdrop', closeDrawer);
+
+      // Make hash links SPA-ish (avoid full reload)
+      $(document).on('click', 'a[href^="' + window.__ADMIN_BASE + '#/"]', function(e){
+        // allow normal navigation but no hard reload
+        // In practice browser won't reload on hash, but some setups do; keep safe:
+        // e.preventDefault(); location.hash = ...; (optional)
+        closeDrawer();
+      });
+
+      // Active nav highlighting
+      function setActive(){
+        const hash = location.hash || '#/dashboard';
+        const key =
+          hash.startsWith('#/orders') ? 'orders' :
+          hash.startsWith('#/products') ? 'products' :
+          hash.startsWith('#/settings') ? 'settings' :
+          hash.startsWith('#/whatsapp') ? 'whatsapp' :
+          'dashboard';
+
+        $('[data-nav]').removeClass('is-active');
+        $('[data-nav="' + key + '"]').addClass('is-active');
+      }
+      window.addEventListener('hashchange', setActive);
+      setActive();
+    })();
   </script>
-  <script src="/public/admin.js"></script>
+
+  <!-- Admin JS -->
+  <script src="/public/admin.js?v=<%= ASSET_V %>"></script>
 </body>
 </html>
