@@ -40,7 +40,7 @@
       fulfill_status: $('#fulfill_status').val()
     });
 
-    const url = window.__ADMIN_BASE + '/api/orders?' + qs;
+    const url = 'https://pansa.my.id/panel-pansa/api/orders?' + qs;
 
     const resp = await $.ajax({
       method: 'GET',
